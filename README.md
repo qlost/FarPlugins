@@ -1,0 +1,2 @@
+# FarPlugins
+Плагины для Far
