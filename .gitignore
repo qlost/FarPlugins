@@ -1,32 +1,30 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
+#Artefacts
+/_build/vc/_output
+/enc/build
+Debug.*.vc*
+Release.*.vc*
+Debug.*.gcc
+Release.*.gcc
+final.*.vc*
+final.*.gcc*
+obj.*.vc*
 *.lib
 
-# Executables
-*.exe
-*.out
-*.app
+# VS
+.vs
+ipch
+*.db
+*.opendb
+*.vcxproj.user
+*.suo
+
+#InteliJ
+/.idea
+/*.iml
+
+# Build scripts
+__*.cmd
+
+#logs
+/plugins/*/*.log
+logs
