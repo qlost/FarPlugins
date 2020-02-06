@@ -18,11 +18,11 @@
 #include "syntax.h"
 
 
-enum CALC_ERROR 
-{ 
-	ERR_OK = 0, 
+enum CALC_ERROR
+{
+	ERR_OK = 0,
 	ERR_ALL, ERR_EXPR, ERR_TYPE,
-	ERR_PARAM, ERR_BRACK, ERR_ZERO, ERR_FLOW, ERR_TOOLONG 
+	ERR_PARAM, ERR_BRACK, ERR_ZERO, ERR_FLOW, ERR_TOOLONG
 };
 
 enum CALC_CONV_TYPE
@@ -36,9 +36,9 @@ enum CALC_CONV_TYPE
 class CalcAddonPart
 {
 public:
-	CalcAddonPart() 
-	{ 
-		parser = NULL; 
+	CalcAddonPart()
+	{
+		parser = NULL;
 	}
 	CalcAddonPart(const CalcAddonPart & p);
 
@@ -56,16 +56,16 @@ public:
 class CalcAddon
 {
 public:
-	CalcAddon() 
+	CalcAddon()
 	{
 		radix = 10;
 		flags = CALC_ADDON_FLAG_NONE;
 	}
-	
+
 public:
 	std::wstring name;
 	std::wstring expr;
-	
+
 	int radix, flags;
 
 	std::vector<CalcAddonPart> parts;
@@ -116,7 +116,7 @@ class CalcParser : public MathExpressionBase<SArg>
 
 public:
   	typedef SArg value_type;
-  
+
   	CalcParser();
 	CalcParser(const CalcParser & p);
 
@@ -137,7 +137,7 @@ public:
 	static void RoundUp(Big &b);
 
   	SArg Parse(const wchar_t* str, bool case_sensitive);
-	
+
 	CALC_ERROR GetError();
 
 public:
@@ -171,7 +171,7 @@ protected:
 
 	static SArg builtin_binary_op(const SArg & op0, const SArg & op1);
 	static SArg builtin_unary_not(const SArg & op);
-	
+
 	static SArg binary_op(const SArg & op0, const SArg & op1);
 	static SArg unary_op(const SArg & op0);
 
@@ -208,7 +208,7 @@ protected:
 
 };
 
-/// if type_idx >= 0 then it's index to addons, or type enum if < 0 
+/// if type_idx >= 0 then it's index to addons, or type enum if < 0
 wchar_t *convertToString(const SArg & val, int type_idx, int num_lim = 0, bool append_suffix = false, bool pad_zeroes = true, bool group_delim = true, CALC_ERROR *error_code = NULL);
 
 #endif // of CALC_NEWPARSE_H

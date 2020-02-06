@@ -578,9 +578,8 @@ Big SArg::GetBig() const
 	switch(type)
 	{
     case SA_BIG: return v_big;
-
     case SA_INT64:  big.FromInt(arg.v_int64);  return big;
-	case SA_UINT64: big.FromInt(arg.v_uint64);  return big;
+    case SA_UINT64: big.FromInt(arg.v_uint64);  return big;
     case SA_INT:    big.FromInt(arg.v_int);  return big;
     case SA_SHORT:  big.FromInt(arg.v_short);  return big;
     case SA_CHAR:   big.FromInt(arg.v_char);  return big;

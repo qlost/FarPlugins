@@ -4,8 +4,8 @@
 enum
 {
 	mName, mMenuName, mConfigName, mLang,
-	
-	mDialogs, 
+
+	mDialogs,
 	mOk, mSave, mCancel, mAdvanced,
 
 	mConfigShowResults,
@@ -25,8 +25,8 @@ enum
 	mConfigUseRegional,
 	mConfigArguments,
 	mConfigDigitDelimiter,
-	
-	mNoError, 
+
+	mNoError,
 	mError1, mError2, mError3, mError4, mError5, mError6, mError7, mError8,
 };
 
