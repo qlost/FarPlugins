@@ -6,6 +6,7 @@
 //  to License (see /doc/license.txt for more information).
 //
 
+#include <CRT\crt.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -144,8 +145,11 @@ BOOL LoadConfig()
 				wcsncpy(param_table[i].sval, param_table[i].def_value, (int)param_table[i].ival / sizeof(wchar_t));
 		} else
 		{
-			if (!api->SettingsGet(param_table[i].reg_name, NULL, (DWORD *)param_table[i].ival))
-				*param_table[i].ival = _wtoi(param_table[i].def_value);
+			if (!api->SettingsGet(param_table[i].reg_name, NULL, (DWORD*)param_table[i].ival)) {
+				//*param_table[i].ival = _wtoi(param_table[i].def_value);
+				wchar_t* endptr;
+				*param_table[i].ival = wcstol(param_table[i].def_value, &endptr, 10);
+			}
 		}
 	}
 	api->SettingsEnd();
@@ -268,7 +272,7 @@ bool ConfigDialog()
 				dlg[i].PtrData = dlgItems[i].prop_svalue;
 			else if (dlgItems[i].prop_ivalue)
 			{
-				_itow(*dlgItems[i].prop_ivalue, tmpnum[i], 10);
+				_i64tow(*dlgItems[i].prop_ivalue, tmpnum[i], 10);
 				dlg[i].PtrData = tmpnum[i];
 			}
 		}
@@ -303,7 +307,9 @@ bool ConfigDialog()
 				if (dlgItems[i].Type == CALC_DI_FIXEDIT)
 				{
 					cfg.GetText(i, str);
-					*dlgItems[i].prop_ivalue = _wtoi(str.c_str());
+					//*dlgItems[i].prop_ivalue = _wtoi(str.c_str());
+					wchar_t* endptr;
+					*dlgItems[i].prop_ivalue = wcstol(str.c_str(), &endptr, 10);
 				}
 				else
 				{

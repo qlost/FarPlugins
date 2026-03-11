@@ -161,7 +161,7 @@ public:
 		Info->DialogFree(hdlg);
 	}
 
-	virtual CALC_INT_PTR DefDlgProc(DLGHANDLE hdlg, int msg, int param1, void *param2)
+	virtual CALC_INT_PTR DefDlgProc1(DLGHANDLE hdlg, int msg, int param1, void *param2)
 	{
 		return Info->DefDlgProc(hdlg, msg, param1, (void *)param2);
 	}
@@ -469,15 +469,7 @@ CalcApi *CreateApiFar3(void *info)
 
 	// check far version directly
 	VersionInfo ver;
-	int ret = 0;
-	try
-	{
-		ret = (int)psi->AdvControl(&MainGuid, ACTL_GETFARMANAGERVERSION, 0, &ver);
-	}
-	catch (...)
-	{
-		return NULL;
-	}
+	int ret = (int)psi->AdvControl(&MainGuid, ACTL_GETFARMANAGERVERSION, 0, &ver);
 
 	if (ret != 1 || ver.Major < 3 || ver.Major > 10)
 		return NULL;

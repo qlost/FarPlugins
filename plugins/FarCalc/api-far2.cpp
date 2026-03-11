@@ -5,12 +5,30 @@
 //  to License (see /doc/license.txt for more information).
 //
 
+#include <shlwapi.h>
 #include "api.h"
 
 #include <farplugin/2.0/plugin.hpp>
 #include <farplugin/2.0/farkeys.hpp>
 #include <farplugin/2.0/farcolor.hpp>
 
+/////////////////////////////////////////////////////////////////////////////////
+_ACRTIMP __declspec(noreturn) void __cdecl _invalid_parameter_noinfo_noreturn(void) {}
+
+__declspec(noreturn)
+_ACRTIMP void __cdecl _invoke_watson(
+	_In_opt_z_ wchar_t const* _Expression,
+	_In_opt_z_ wchar_t const* _FunctionName,
+	_In_opt_z_ wchar_t const* _FileName,
+	_In_       unsigned int _LineNo,
+	_In_       uintptr_t _Reserved) {}
+
+void __cdecl std::_Xlength_error(char const*) {}
+
+void(__cdecl* std::_Raise_handler)(class stdext::exception const&) {};
+
+int _purecall() { return 0; }
+/////////////////////////////////////////////////////////////////////////////////
 
 static const wchar_t *PluginMenuStrings, *PluginConfigStrings;
 static CalcDialog::CalcDialogCallback *msg_table = NULL;
@@ -186,7 +204,7 @@ public:
 		Info->DialogFree(hdlg);
 	}
 
-	virtual CALC_INT_PTR DefDlgProc(DLGHANDLE hdlg, int msg, int param1, void *param2)
+	virtual CALC_INT_PTR DefDlgProc1(DLGHANDLE hdlg, int msg, int param1, void *param2)
 	{
 		return Info->DefDlgProc(hdlg, msg, param1, (LONG_PTR)param2);
 	}
@@ -489,7 +507,7 @@ public:
 	{
 		hReg = 0;
 		wchar_t Key[256];
-		swprintf(Key, 256, L"%s\\calculator", Info.RootKey);
+		wnsprintf(Key, 256, L"%s\\calculator", Info.RootKey);
 		return RegCreateKeyEx(HKEY_CURRENT_USER, Key, 0, NULL, REG_OPTION_NON_VOLATILE,
 								KEY_ALL_ACCESS, NULL, &hReg, NULL) == ERROR_SUCCESS;
 	}

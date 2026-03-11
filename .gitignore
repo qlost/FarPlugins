@@ -1,30 +1,3 @@
-#Artefacts
-/_build/vc/_output
-/enc/build
-Debug.*.vc*
-Release.*.vc*
-Debug.*.gcc
-Release.*.gcc
-final.*.vc*
-final.*.gcc*
-obj.*.vc*
-*.lib
-
-# VS
-.vs
-ipch
-*.db
-*.opendb
+.*
 *.vcxproj.user
-*.suo
-
-#InteliJ
-/.idea
-/*.iml
-
-# Build scripts
-__*.cmd
-
-#logs
-/plugins/*/*.log
-logs
+plugins/common

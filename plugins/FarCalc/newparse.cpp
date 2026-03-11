@@ -7,6 +7,7 @@
 
 #define _CRT_NON_CONFORMING_SWPRINTFS
 
+//#include <CRT\crt.hpp>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

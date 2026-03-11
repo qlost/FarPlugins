@@ -298,11 +298,11 @@ int CalcMenu(int c)
 	int ret;
 
 	std::vector<CalcMenuItem> MenuEls(CalcParser::DialogsNum + 1);
-	MenuEls[0].Text = _wcsdup(api->GetMsg(mName));
+	MenuEls[0].Text = wcsdup(api->GetMsg(mName));
 
 	PDialogData dd;
 	for(i = 1, dd = CalcParser::DialogData; dd; dd = dd->Next, i++)
-		MenuEls[i].Text = _wcsdup(dd->Name);
+		MenuEls[i].Text = wcsdup(dd->Name);
 
 	MenuEls[c].Selected = TRUE;
 
@@ -512,14 +512,14 @@ public:
 				{
 					SArg args[2];
 					args[0] = res;
-					try
-					{
+					/*try
+					{*/
 						val = de->input->parser->eval(args).GetBig();
-					}
+					/*}
 					catch(CALC_ERROR)
 					{
 						was_error = true;
-					}
+					}*/
 				} else
 					val = res.GetBig() * de->scale;
 				break;
@@ -584,7 +584,7 @@ public:
 			{
 				if (coreReturn)
 					free(coreReturn);
-				coreReturn = _wcsdup(str.c_str());
+				coreReturn = wcsdup(str.c_str());
 				Close(CALC_EDIT_ID);
 				return TRUE;
 			}
@@ -642,7 +642,7 @@ void ShowUnitsDialog(int no)
 	dialog[0].Type = CALC_DI_DOUBLEBOX;
 
 	// XXX:
-	dialog[0].PtrData = _wcsdup(dd->Name);
+	dialog[0].PtrData = wcsdup(dd->Name);
 
 	for (d = 1, i = 0, de1 = de;  i < dd->num;  i++,d++, de1 = de1->Next)
 	{
@@ -650,11 +650,11 @@ void ShowUnitsDialog(int no)
 		{
 			dialog[d].Type = CALC_DI_TEXT;
 			dialog[d].Flags = CALC_DIF_BOXCOLOR;	// used to set highlight colors
-			dialog[d].PtrData = _wcsdup(de1->Name);
+			dialog[d].PtrData = wcsdup(de1->Name);
 		} else
 		{
 			dialog[d].Type = CALC_DI_TEXT;
-			dialog[d].PtrData = _wcsdup(de1->Name);
+			dialog[d].PtrData = wcsdup(de1->Name);
 			d++;
 			dialog[d].Type = CALC_DI_EDIT;
 		}
@@ -806,7 +806,7 @@ public:
 			{
 				if (coreReturn)
 					free(coreReturn);
-				coreReturn = _wcsdup(str.c_str());
+				coreReturn = wcsdup(str.c_str());
 				Close(CALC_EDIT_ID);
 			}
 
@@ -1037,7 +1037,7 @@ void CalcShowDialog()
 
 	for (i = 0; i < basenum; i++)
 		dialog[i] = dialog_template[i];
-	dialog[0].PtrData = _wcsdup(api->GetMsg(mName));
+	dialog[0].PtrData = wcsdup(api->GetMsg(mName));
 
 	if (!props.autocomplete)
 		dialog[2].Flags |= CALC_DIF_NOAUTOCOMPLETE;
@@ -1062,8 +1062,8 @@ void CalcShowDialog()
 		{
 			int pad_len = addons_info.max_len - get_visible_len(from);
 
-			memset(tmp, ' ', pad_len * sizeof(wchar_t));	// guarantee that _wcsnset won't stop at '\0'
-			_wcsnset(tmp, ' ', pad_len);
+			for (int i = 0; i < pad_len; i++)
+				tmp[i] = L' ';
 
 			wcscpy(tmp + pad_len, from);
 			wcscat(tmp, L":");

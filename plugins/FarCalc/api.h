@@ -158,13 +158,13 @@ struct CalcEditorGetString
 	intptr_t SelEnd;
 };
 
-struct CalcCoord 
+struct CalcCoord
 {
 	short X;
 	short Y;
 };
 
-struct CalcRect 
+struct CalcRect
 {
 	short Left;
 	short Top;
@@ -206,7 +206,7 @@ public:
 	CalcDialog();
 	virtual ~CalcDialog();
 
-	bool Init(int id, int X1, int Y1, int X2, int Y2, const wchar_t *HelpTopic, 
+	bool Init(int id, int X1, int Y1, int X2, int Y2, const wchar_t *HelpTopic,
 					struct CalcDialogItem *Item, unsigned int ItemsNumber);
 	intptr_t Run();
 
@@ -215,7 +215,7 @@ public:
 	void RedrawDialog();
 	void GetDlgRect(CalcRect *rect);
 	void Close(int exitcode);
-	
+
 	void GetDlgItemShort(int id, CalcDialogItem *item);
 	void SetDlgItemShort(int id, const CalcDialogItem & item);
 	void SetItemPosition(int id, const CalcRect & rect);
@@ -243,7 +243,7 @@ public:
 public:
 	typedef CALC_INT_PTR (CalcDialog::*CalcDialogCallback)(int param1, void *param2);
 	CalcDialogCallback *msg_tbl;
-protected:	
+protected:
 	DLGHANDLE hdlg;
 };
 
@@ -272,12 +272,12 @@ public:
 	virtual bool IsChecked(DLGHANDLE, int id) = 0;
 
 public:
-	virtual DLGHANDLE DialogInit(int id, int X1, int Y1, int X2, int Y2, const wchar_t *HelpTopic, 
-								struct CalcDialogItem *Item, unsigned int ItemsNumber, 
+	virtual DLGHANDLE DialogInit(int id, int X1, int Y1, int X2, int Y2, const wchar_t *HelpTopic,
+								struct CalcDialogItem *Item, unsigned int ItemsNumber,
 								CALCDLGPROC dlgProc) = 0;
 	virtual intptr_t DialogRun(DLGHANDLE) = 0;
 	virtual void DialogFree(DLGHANDLE) = 0;
-	virtual CALC_INT_PTR DefDlgProc(DLGHANDLE hdlg, int msg, int param1, void *param2) = 0;
+	virtual CALC_INT_PTR DefDlgProc1(DLGHANDLE hdlg, int msg, int param1, void *param2) = 0;
 	virtual void ConvertToDlgItem(void *, CalcDialogItem *) = 0;
 	virtual void ConvertFromDlgItem(const CalcDialogItem *, void *) = 0;
 
@@ -302,7 +302,7 @@ public:
 						int ItemsNumber, int ButtonsNumber) = 0;
 
 	virtual intptr_t Menu(int X, int Y, int MaxHeight, unsigned long long Flags,
-					const wchar_t *Title, const wchar_t *HelpTopic, 
+					const wchar_t *Title, const wchar_t *HelpTopic,
 					const std::vector<CalcMenuItem> & Items) = 0;
 
 	virtual void EditorGet(CalcEditorGetString *string, CalcEditorInfo *info) = 0;
@@ -322,7 +322,7 @@ public:
 
 	virtual const wchar_t *GetModuleName() = 0;
 
-	
+
 };
 
 extern CalcApi *CreateApiFar2(void *info);

@@ -82,28 +82,24 @@ int WINAPI GetMinFarVersionW()
 
 ////////////////////////////////////////////////////////////////////
 
-struct DlgHashFunc : public std::unary_function<DLGHANDLE, size_t>
-{
-	size_t operator()(const DLGHANDLE & sKey ) const
-	{
-		return (size_t)sKey;
-	}
+struct tMap {
+	DLGHANDLE hdlg;
+	CalcDialog* dlg;
 };
 
-
-
-// dlg_hash.insert(std::make_pair(handle, dlgobj));
-static ag::hash_map<DLGHANDLE, CalcDialog *, DlgHashFunc> dlg_hash;
-typedef ag::hash_map<DLGHANDLE, CalcDialog *, DlgHashFunc>::iterator  opiter;
+tMap dlg_hash[2];
+int dlg_cur = -1;
 
 static CALC_INT_PTR __stdcall dlgProc(DLGHANDLE hdlg, int msg, int param1, void *param2)
 {
-	opiter op = dlg_hash.find(hdlg);
-	CALC_INT_PTR ret = -1;
-	if (op != dlg_hash.end())
-	{
-		CalcDialog *dlg = op->second;
+	if ((dlg_cur == -1) || (dlg_cur >= ARRAYSIZE(dlg_hash) - 1))
+		return -1;
 
+	CALC_INT_PTR ret = -1;
+	CalcDialog *dlg = dlg_hash[dlg_cur].dlg;
+
+	if (dlg)
+	{
 		if (dlg->msg_tbl[msg])
 		{
 			dlg_funcs->PreProcessMessage(hdlg, msg, param1, param2);
@@ -115,7 +111,7 @@ static CALC_INT_PTR __stdcall dlgProc(DLGHANDLE hdlg, int msg, int param1, void 
 	}
 
 	if (ret == -1)
-		return dlg_funcs->DefDlgProc(hdlg, msg, param1, param2);
+		return dlg_funcs->DefDlgProc1(hdlg, msg, param1, param2);
 	return ret;
 }
 
@@ -131,9 +127,9 @@ CalcDialog::~CalcDialog()
 {
 	if (hdlg)
 	{
-		opiter op = dlg_hash.find(hdlg);
-		if (op != dlg_hash.end())
-			dlg_hash.erase(op);
+		dlg_hash[dlg_cur].hdlg = NULL;
+		dlg_hash[dlg_cur].dlg = NULL;
+		dlg_cur--;
 		dlg_funcs->DialogFree(hdlg);
 	}
 }
@@ -141,11 +137,22 @@ CalcDialog::~CalcDialog()
 bool CalcDialog::Init(int id, int X1, int Y1, int X2, int Y2, const wchar_t *HelpTopic,
 							struct CalcDialogItem *Item, unsigned int ItemsNumber)
 {
-	hdlg = dlg_funcs->DialogInit(id, X1, Y1, X2, Y2, HelpTopic, Item, ItemsNumber, dlgProc);
-	if (hdlg == INVALID_HANDLE_VALUE)
+	if (dlg_cur >= ARRAYSIZE(dlg_hash)-1)
+	{
+		const wchar_t *MsgItems[] = {L"Calc error", L"Count out of range!"};//!!DEBUG
+		api->Message(0, NULL, MsgItems, 3, 1);
 		return false;
-	dlg_hash.insert(std::make_pair(hdlg, this));
-	return true;
+	}
+	else
+	{
+		hdlg = dlg_funcs->DialogInit(id, X1, Y1, X2, Y2, HelpTopic, Item, ItemsNumber, dlgProc);
+		if (hdlg == INVALID_HANDLE_VALUE)
+			return false;
+		dlg_hash[dlg_cur].hdlg = hdlg;
+		dlg_hash[dlg_cur].dlg = this;
+		dlg_cur++;
+		return true;
+	}
 }
 
 intptr_t CalcDialog::Run()

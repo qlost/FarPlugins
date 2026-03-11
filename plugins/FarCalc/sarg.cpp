@@ -6,6 +6,7 @@
 //  to License (see /doc/license.txt for more information).
 //
 
+#include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +17,24 @@
 #include "newparse.h"
 #include "sarg.h"
 #include "syntax.h"
+
+static unsigned long int next = 1;
+
+int rand(void) // RAND_MAX assumed to be 32767
+{
+    next = next * 1103515245 + 12345;
+    return (unsigned int)(next/65536) % 32768;
+}
+
+void srand(unsigned int seed)
+{
+    next = seed;
+}
+
+__time64_t _time64(_Out_opt_ __time64_t* _Time)
+{
+	return GetTickCount64();
+}
 
 
 SArg::SArg()
