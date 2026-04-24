@@ -35,7 +35,7 @@ struct CFileRecord
 
 struct CCopyRecord
 {
-  UINT64    parent;
+  size_t    parent;
   string    src;
   string    dst;
   UINT64    size;
@@ -93,9 +93,9 @@ private:
   void          DrawProgress(wchar_t *buf, unsigned size, unsigned type);
   void          ShowProgressMessage();
   bool          DeleteFileFrom(const wchar_t *src, bool bSilent);
-  bool          ADBScanDirectory(UINT64 parent);
+  bool          ADBScanDirectory(size_t parent);
   int           CopyErrorDialog(const wchar_t *sTitle, string &sRes);
-  bool          ScanDirectory(UINT64 parent);
+  bool          ScanDirectory(size_t parent);
 public:
   fardroid();
   ~fardroid();

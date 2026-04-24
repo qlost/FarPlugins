@@ -48,7 +48,6 @@ enum {
   MCopyFile,
   MScanDirectory,
   MScreenshot,
-  MScreenshotComplete,
 
   MBreakWarn,
 

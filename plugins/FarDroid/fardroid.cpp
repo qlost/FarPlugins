@@ -283,8 +283,10 @@ bool Socket::ADBPullFile(string &sSrc, const wchar_t *sDst, string &sRes, const 
           WriteFile(hFile, buffer, ret, &written, NULL);
           android->procStruct.data[PT_ONE].current += written;
           android->procStruct.data[PT_ALL].current += written;
-          if (android->CheckForEsc())
+          if (android->CheckForEsc()) {
+            result = false;
             break;
+          }
           android->ShowProgressMessage();
         }
         else //ID_DONE?
@@ -337,8 +339,10 @@ bool Socket::ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes, unsign
       }
       android->procStruct.data[PT_ONE].current += sbuf->size;
       android->procStruct.data[PT_ALL].current += sbuf->size;
-      if (android->CheckForEsc())
+      if (android->CheckForEsc()) {
+        result = false;
         break;
+      }
       android->ShowProgressMessage();
     }
     delete sbuf;
@@ -624,7 +628,7 @@ bool fardroid::ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes)
   return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
 }
 
-bool fardroid::ADB_pull(string &sSrc, const wchar_t *sDst, string& sRes, const CCopyRecord *rec)
+bool fardroid::ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec)
 {FUNCTION
   Socket sock(this);
   string cmd = L"sync:";
@@ -769,7 +773,7 @@ void fardroid::CheckCapabilities()
       }
     }
   }
-  sRes.Format(L"UseLS_N=%d  UseLIS2=%d", Opt.UseLS_N, Opt.UseLIS2);
+  sRes.Format(L"UseLS_N=%u  UseLIS2=%u", Opt.UseLS_N, Opt.UseLIS2);
   DEBUGLOG(sRes.CPtr());
 }
 
@@ -1068,7 +1072,7 @@ bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNu
         NewPanelItem[i].CreationTime = recs[i]->ctime;
         NewPanelItem[i].LastAccessTime = recs[i]->atime;
         NewPanelItem[i].LastWriteTime = NewPanelItem[i].ChangeTime = recs[i]->mtime;
-        NewPanelItem[i].CRC32 = recs[i]->mode;
+        NewPanelItem[i].CRC32 = (uintptr_t)recs[i]->mode;
         NewPanelItem[i].FileAttributes = ModeToAttr(recs[i]->mode);
         if (!recs[i]->grp.IsEmpty()) {
           NewPanelItem[i].UserData.Data = wcsdup(recs[i]->grp.CPtr());
@@ -1084,7 +1088,7 @@ bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNu
   }
 }
 
-int fardroid::DeviceMenu(string& text)
+int fardroid::DeviceMenu(string &text)
 {FUNCTION
   unsigned size = 0;
   wchar_t *p = (wchar_t*)text.CPtr();
@@ -1176,6 +1180,8 @@ void fardroid::GetFramebuffer()
       if ((fbinfo.version != 2 || sock.ReadADBPacket(&tmp, sizeof(tmp)) > 0) && sock.ReadADBPacket(&fb.size, sizeof(struct fb)-4) > 0) {
         fb.data = malloc(fb.size);
         if (fb.data) {
+          wchar_t szConsoleTitle[MAX_PATH];
+          GetConsoleTitle(szConsoleTitle, MAX_PATH);
           HANDLE hScreen = PsInfo.SaveScreen(0, 0, -1, -1);
           procStruct.pType = PS_FB;
           procStruct.bSilent = false;
@@ -1183,6 +1189,7 @@ void fardroid::GetFramebuffer()
           procStruct.data[PT_ALL].current = 0;
           procStruct.data[PT_ALL].total = fb.size;
           char *p = (char*)fb.data;
+          PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
           while (fb.size > 0) {
             int read = sock.ReadADBPacket(p, (fb.size < SYNC_DATA_MAX ? fb.size : SYNC_DATA_MAX));
             if (read == 0)
@@ -1195,6 +1202,9 @@ void fardroid::GetFramebuffer()
           SaveToClipboard(&fb);
           free(fb.data);
           PsInfo.RestoreScreen(hScreen);
+          PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
+          PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
+          SetConsoleTitle(szConsoleTitle);
         }
       }
     }
@@ -1361,19 +1371,19 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
 void fardroid::SetProgress(unsigned pt)
 {
   string title;
-  title.Format(L"{%d%%} %s - FARDroid", (procStruct.data[pt].total == 0 ? 0 : procStruct.data[pt].current * 100 / procStruct.data[pt].total), procStruct.title);
+  title.Format(L"{%u%%} %s - FARDroid", size_t(procStruct.data[pt].total == 0 ? 0 : procStruct.data[pt].current * 100 / procStruct.data[pt].total), procStruct.title);
   SetConsoleTitle(title.CPtr());
   ProgressValue value{sizeof(ProgressValue), procStruct.data[pt].current, procStruct.data[pt].total};
   if (procStruct.pType != PS_SCAN)
     PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSVALUE, 0, &value);
 }
 
-void fardroid::DrawProgress(wchar_t *buf, unsigned size, unsigned type)
+void fardroid::DrawProgress(wchar_t *buf, unsigned size, unsigned pt)
 {
-  size_t edge = procStruct.data[type].total == 0 ? 0 : procStruct.data[type].current * size / procStruct.data[type].total;
+  UINT64 edge = procStruct.data[pt].total == 0 ? 0 : procStruct.data[pt].current * size / procStruct.data[pt].total;
   for (unsigned i = 0; i < size; i++)
     buf[i] = i < edge ? 0x2588 : 0x2591; //'█':'░'
-  wsprintf(buf+size, L" %3d%%", (procStruct.data[type].total == 0 ? 0 : (procStruct.data[type].current * 100 / procStruct.data[type].total)));
+  wsprintf(buf+size, L" %3u%%", size_t(procStruct.data[pt].total == 0 ? 0 : (procStruct.data[pt].current * 100 / procStruct.data[pt].total)));
 }
 
 void fardroid::ShowProgressMessage()
@@ -1381,15 +1391,16 @@ void fardroid::ShowProgressMessage()
   ProgressType pt;
   static DWORD dwTicks = 0;
   DWORD dwNewTicks = GetTickCount();
-  if (procStruct.bSilent || dwNewTicks - dwTicks < 500)
+  if (procStruct.bSilent || dwNewTicks - dwTicks < 50)
     return;
   dwTicks = dwNewTicks;
 
   if (procStruct.pType == PS_SCAN)
   {
+    pt = PT_ITEMS;
     size_t elapsed = (dwNewTicks - procStruct.nTotalStartTime) / 1000;
     wchar_t sEla[9];
-    wsprintf(sEla, L"%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
+    wsprintf(sEla, L"%02u:%02u:%02u", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
 
     wchar_t sFiles1[50], sBytes1[50];
     const wchar_t *mFiles = GetMsg(MFiles), *mBytes = GetMsg(MBytes);
@@ -1411,13 +1422,13 @@ void fardroid::ShowProgressMessage()
 
     size_t elapsed = (dwNewTicks - procStruct.nTotalStartTime) / 1000, remain = 0, speed = 0;
     if (elapsed > 0)
-      speed = procStruct.data[PT_ALL].current/ elapsed;
+      speed = size_t(procStruct.data[PT_ALL].current/ elapsed);
     if (speed > 0)
-      remain = (procStruct.data[PT_ALL].total - procStruct.data[PT_ALL].current) / speed;
+      remain = size_t((procStruct.data[PT_ALL].total - procStruct.data[PT_ALL].current) / speed);
 
     wchar_t sEla[9], sRem[9], sSpeed[13];
-    wsprintf(sEla, L"%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
-    wsprintf(sRem, L"%02d:%02d:%02d", remain / 3600, (remain % 3600) / 60, remain % 60);
+    wsprintf(sEla, L"%02u:%02u:%02u", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
+    wsprintf(sRem, L"%02u:%02u:%02u", remain / 3600, (remain % 3600) / 60, remain % 60);
     FSF.FormatFileSize(speed, 12, FFFS_FLOATSIZE|FFFS_MINSIZEINDEX, sSpeed, _ARRAYSIZE(sSpeed));
     string sInfo;
     sInfo.Format(GetMsg(MProgress), sEla, sRem, sSpeed);
@@ -1468,7 +1479,7 @@ void fardroid::ShowProgressMessage()
     const unsigned PROGRESS_SIZE = 50;
     wchar_t buf[PROGRESS_SIZE + 6];
     DrawProgress(buf, PROGRESS_SIZE, PT_ALL);
-    const wchar_t *msg[]{procStruct.title, GetMsg(MScreenshotComplete), buf};
+    const wchar_t *msg[]{procStruct.title, buf};
     PsInfo.Message(&MainGuid, &MsgWaitGuid, FMSG_LEFTALIGN, nullptr, msg, _ARRAYSIZE(msg), 0);
   }
   SetProgress(pt);
@@ -1478,10 +1489,8 @@ bool fardroid::DeleteFileFrom(const wchar_t *src, bool bSilent)
 {FUNCTION
   string sRes;
 deltry:
-  if (ADB_rm(src, sRes))
+  if (ADB_rm(src, sRes) || bSilent)
     return true;
-  if (bSilent)
-    return false;
 
   const wchar_t *msg[]{GetMsg(MDelFile), src, sRes.CPtr()};
   switch (PsInfo.Message(&MainGuid, &MsgGuid, FMSG_WARNING | FMSG_MB_ABORTRETRYIGNORE, L"copyerror", msg, _ARRAYSIZE(msg), 0))
@@ -1509,7 +1518,7 @@ bool fardroid::DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERA
   wchar_t szConsoleTitle[MAX_PATH];
   GetConsoleTitle(szConsoleTitle, MAX_PATH);
   procStruct.pType = PS_DELETE;
-  procStruct.bSilent = bSilent;
+  procStruct.bSilent = false;
   procStruct.title = GetMsg(MDelFile);
   procStruct.data[PT_ITEMS].total = ItemsNumber;
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
@@ -1576,7 +1585,7 @@ bool fardroid::Copy_Rename(bool is_copy)
   }
 }
 
-bool fardroid::ADBScanDirectory(UINT64 parent)
+bool fardroid::ADBScanDirectory(size_t parent)
 {FUNCTION
   CFileRecords recs;
   if (ADB_ls(copy_recs[parent]->src.CPtr(), true, recs)) {
@@ -1702,7 +1711,7 @@ int fardroid::GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
   #ifdef USE_DEBUG
   string log;
   for (size_t i = 0; i < copy_recs.size(); i++) {
-    log.Format(L"%d|%s|%s|%llu|%d\n", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
+    log.Format(L"%u|%s|%s|%llu|%u\n", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
     char *s = log.toUTF8();
     DEBUGBUF(s, (DWORD)log.UTFLen());
   }
@@ -1748,11 +1757,11 @@ int fardroid::GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
           need_pull = (exResult == 0) || (exResult == 2);
         }
 
+        int result;
         if (need_pull) { //Yes
           sd_name = L"/sdcard/";
           sd_name += copy_recs[i]->src;
           sd_name += L".fardroid";
-          int result;
           do {
             sRes.Clear();
             if (Opt.SU && Opt.CopySD && !wcsstr(procStruct.from.CPtr(), L"/sdcard") && !wcsstr(procStruct.from.CPtr(), L"/emulated")) {//включено предварительное копирование на sd и файл скачивается не с sd-карты?
@@ -1765,11 +1774,21 @@ int fardroid::GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
               result = ADB_pull(procStruct.from, procStruct.to.CPtr(), sRes, copy_recs[i]);
 
             if (!result)
-              result = CopyErrorDialog(GetMsg(MGetFile), sRes);
+              if (sRes.IsEmpty())
+                result = ABORT;
+              else
+                result = CopyErrorDialog(GetMsg(MGetFile), sRes);
           } while (result == RETRY);
         }
         else //No == skip
+          result = SKIP;
+
+        if (result == SKIP)
           procStruct.data[PT_ALL].total -= copy_recs[i]->size;
+        else if (result == ABORT) {
+          is_break = true;
+          break;
+        }
       }
     }
     PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
@@ -1780,7 +1799,7 @@ int fardroid::GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
   return is_break ? -1 : 1;
 }
 
-bool fardroid::ScanDirectory(UINT64 parent)
+bool fardroid::ScanDirectory(size_t parent)
 {FUNCTION
   WIN32_FIND_DATA fd;
   string sdir = ConcatPath(copy_recs[parent]->src, L"*");
@@ -1873,7 +1892,7 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
   #ifdef USE_DEBUG
   string log;
   for (size_t i = 0; i < copy_recs.size(); i++) {
-    log.Format(L"%d|%s|%s|%llu|%d\n", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
+    log.Format(L"%u|%s|%s|%llu|%u\n", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
     char *s = log.toUTF8();
     DEBUGBUF(s, (DWORD)log.UTFLen());
   }
@@ -1922,14 +1941,14 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
           need_push = (exResult == 0) || (exResult == 2);
         }
 
+        int result;
         if (need_push) { //Yes
           sd_name = L"/sdcard/";
           sd_name += copy_recs[i]->src;
           sd_name += L".fardroid";
-          int result;
           do {
             sRes.Clear();
-            if (Opt.SU && Opt.CopySD && !wcsstr(procStruct.from.CPtr(), L"/sdcard") && !wcsstr(procStruct.from.CPtr(), L"/emulated")) {//включено предварительное копирование на sd и файл скачивается не с sd-карты?
+            if (Opt.SU && Opt.CopySD && !wcsstr(procStruct.to.CPtr(), L"/sdcard") && !wcsstr(procStruct.to.CPtr(), L"/emulated")) {//включено предварительное копирование на sd и файл закачивается не на sd-карту?
               result = ADB_push(procStruct.from.CPtr(), sd_name, sRes, mode);
               if (result)
                 result = ADB_rename(sd_name.CPtr(), procStruct.to.CPtr(), sRes);
@@ -1938,13 +1957,23 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
               result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes, mode);
 
             if (!result)
-              result = CopyErrorDialog(GetMsg(MGetFile), sRes);
+              if (sRes.IsEmpty())
+                result = ABORT;
+              else
+                result = CopyErrorDialog(GetMsg(MGetFile), sRes);
           } while (result == RETRY);
         }
         else //No == skip
+          result = SKIP;
+
+        if (result == SKIP)
           procStruct.data[PT_ALL].total -= copy_recs[i]->size;
-      }
-    }
+        else if (result == ABORT) {
+          is_break = true;
+          break;
+        }
+      }//copy file
+    }//for
     PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
   }
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);

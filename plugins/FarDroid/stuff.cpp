@@ -231,7 +231,7 @@ unsigned StringOctalToMode(const wchar_t *octal)
   return x;
 }
 
-uintptr_t ModeToAttr(uintptr_t p)
+uintptr_t ModeToAttr(const UINT64 p)
 {
   if (p == -1)
     return FILE_ATTRIBUTE_OFFLINE;

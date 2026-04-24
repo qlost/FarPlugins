@@ -139,7 +139,7 @@ struct ProcessStruct
   const wchar_t *title;
   string        from, to;
   DWORD         nTotalStartTime;
-  struct { size_t current, total; } data[3];//files, filesize, totalsize
+  struct { UINT64 current, total; } data[3];//files, filesize, totalsize
 };
 
 extern  Options Opt;
@@ -163,7 +163,7 @@ unsigned short  GetMonth(const wchar_t *sMonth);
 void            i2octal(uintptr_t v, wchar_t *buf, unsigned maxlen);
 uintptr_t       StringToMode(const wchar_t *sAttr);
 unsigned        StringOctalToMode(const wchar_t *octal);
-uintptr_t       ModeToAttr(uintptr_t mode);
+uintptr_t       ModeToAttr(const UINT64 mode);
 const wchar_t*  ModeToType(const UINT64 p);
 FILETIME        UnixTimeToFileTime(time_t time);
 time_t          FileTimeToUnixTime(FILETIME ft);
