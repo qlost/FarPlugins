@@ -1,0 +1,236 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="C:\Far\Plugins\embview\embview.dll"/>
+    <OBJFILES value="main.obj ..\FarHeaders\CRT\ctype.obj ..\FarHeaders\CRT\delete.obj 
+      ..\FarHeaders\CRT\delete_array.obj ..\FarHeaders\CRT\free.obj 
+      ..\FarHeaders\CRT\i64toa.obj ..\FarHeaders\CRT\malloc.obj 
+      ..\FarHeaders\CRT\memchr.obj ..\FarHeaders\CRT\memcmp.obj 
+      ..\FarHeaders\CRT\memcpy.obj ..\FarHeaders\CRT\memicmp.obj 
+      ..\FarHeaders\CRT\memmove.obj ..\FarHeaders\CRT\memset.obj 
+      ..\FarHeaders\CRT\new.obj ..\FarHeaders\CRT\new_array.obj 
+      ..\FarHeaders\CRT\realloc.obj ..\FarHeaders\CRT\strchr.obj 
+      ..\FarHeaders\CRT\strcspn.obj ..\FarHeaders\CRT\strdup.obj 
+      ..\FarHeaders\CRT\strncat.obj ..\FarHeaders\CRT\strncmp.obj 
+      ..\FarHeaders\CRT\strpbrk.obj ..\FarHeaders\CRT\strrchr.obj 
+      ..\FarHeaders\CRT\strstr.obj ..\FarHeaders\CRT\strtok.obj 
+      ..\FarHeaders\CRT\strtol.obj embfile.obj"/>
+    <RESFILES value=""/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES)"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value=""/>
+    <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi dbrtl.bpi dbimg.bpi vcldb.bpi bdertl.bpi 
+      vcldbx.bpi dsnap.bpi cds.bpi vclie.bpi xmlrtl.bpi inet.bpi inetdbbde.bpi 
+      inetdbxpress.bpi inetdb.bpi nmfast.bpi webdsnap.bpi bcbie.bpi websnap.bpi 
+      dbexpress.bpi dbxcds.bpi indy.bpi rxctl6.bpi rxdb6.bpi rxbde6.bpi 
+      soaprtl.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="__STDLIB_H_USING_LIST;__STRING_H_USING_LIST;__MEM_H_USING_LIST;__CTYPE_H_USING_LIST;STRICT"/>
+    <SYSDEFINES value="NO_STRICT;_NO_VCL"/>
+    <MAINSOURCE value="embview.bpf"/>
+    <INCLUDEPATH value="&quot;C:\Program Files\CBuilder6\Projects&quot;;$(BCB)\include;C:\programs\FarHeaders"/>
+    <LIBPATH value="&quot;C:\Program Files\CBuilder6\Projects&quot;;$(BCB)\lib"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-I&quot;C:\Program Files\CBuilder6\Projects&quot; -I$(BCB)\include 
+      -IC:\programs\FarHeaders -src_suffix cpp -D__STDLIB_H_USING_LIST 
+      -D__STRING_H_USING_LIST -D__MEM_H_USING_LIST -D__CTYPE_H_USING_LIST 
+      -DSTRICT -boa"/>
+    <CFLAG1 value="-WD -O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vmd -Vx -Ve -x- -RT- -Vmp -ff -X- 
+      -a4 -6 -b- -d -k- -vi -tWD -tWM- -c"/>
+    <PFLAGS value="-$Y- -$L- -$I- -$D- -$C- -$A4 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /m4 /w2 /zn /q"/>
+    <LFLAGS value="-D&quot;&quot; -aa -Tpd -x -Gn -w"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="$(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="main.cpp" FORMNAME="" UNITNAME="main" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\ctype.obj" FORMNAME="" UNITNAME="ctype.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\delete.obj" FORMNAME="" UNITNAME="delete.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\delete_array.obj" FORMNAME="" UNITNAME="delete_array.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\free.obj" FORMNAME="" UNITNAME="free.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\i64toa.obj" FORMNAME="" UNITNAME="i64toa.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\malloc.obj" FORMNAME="" UNITNAME="malloc.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\memchr.obj" FORMNAME="" UNITNAME="memchr.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\memcmp.obj" FORMNAME="" UNITNAME="memcmp.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\memcpy.obj" FORMNAME="" UNITNAME="memcpy.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\memicmp.obj" FORMNAME="" UNITNAME="memicmp.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\memmove.obj" FORMNAME="" UNITNAME="memmove.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\memset.obj" FORMNAME="" UNITNAME="memset.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\new.obj" FORMNAME="" UNITNAME="new.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\new_array.obj" FORMNAME="" UNITNAME="new_array.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\realloc.obj" FORMNAME="" UNITNAME="realloc.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strchr.obj" FORMNAME="" UNITNAME="strchr.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strcspn.obj" FORMNAME="" UNITNAME="strcspn.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strdup.obj" FORMNAME="" UNITNAME="strdup.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strncat.obj" FORMNAME="" UNITNAME="strncat.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strncmp.obj" FORMNAME="" UNITNAME="strncmp.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strpbrk.obj" FORMNAME="" UNITNAME="strpbrk.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strrchr.obj" FORMNAME="" UNITNAME="strrchr.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strstr.obj" FORMNAME="" UNITNAME="strstr.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strtok.obj" FORMNAME="" UNITNAME="strtok.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\FarHeaders\CRT\strtol.obj" FORMNAME="" UNITNAME="strtol.obj" CONTAINERID="OBJTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="embfile.cpp" FORMNAME="" UNITNAME="embfile" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=1
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=1
+DLL=0
+Locale=1049
+CodePage=1251
+
+[Version Info Keys]
+CompanyName=Lost organisation
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=(c) Lost
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+
+[Excluded Packages]
+c:\program files\cbuilder6\Bin\dclado60.bpl=Borland ADO DB Components
+c:\program files\cbuilder6\Bin\DCLIB60.bpl=InterBase Data Access Components
+c:\program files\cbuilder6\Bin\dclbdecds60.bpl=Borland Local BDE ClientDataset Components
+c:\program files\cbuilder6\Bin\dclqrt60.bpl=QuickReport Components
+c:\program files\cbuilder6\Bin\dcltee60.bpl=TeeChart Components
+c:\program files\cbuilder6\Bin\dcldss60.bpl=Borland Decision Cube Components
+c:\program files\cbuilder6\Bin\dcltqr60.bpl=TeeChart for QuickReport Components
+c:\program files\cbuilder6\Bin\dclclxdb60.bpl=Borland CLX Database Components
+C:\Program Files\CBuilder6\Bin\dclclxstd60.bpl=Borland CLX Standard Components
+c:\program files\cbuilder6\Bin\dclmcn60.bpl=Borland DataSnap Connection Components
+c:\program files\cbuilder6\Bin\dclsmpedit60.bpl=Borland Editor Script Enhancements
+c:\program files\cbuilder6\Bin\applet60.bpl=Borland Control Panel Applet Package
+c:\program files\cbuilder6\Bin\dclemacsedit60.bpl=Borland Editor Emacs Enhancements
+c:\program files\cbuilder6\Bin\dclact60.bpl=Borland ActionBar Components
+c:\program files\cbuilder6\Bin\dclmlwiz60.bpl=Borland Markup Language Wizards
+c:\program files\cbuilder6\Bin\idefilters60.bpl=IDE Filter for CPP32
+c:\program files\cbuilder6\Bin\dcl31w60.bpl=Delphi 1.0 Compatibility Components
+c:\program files\cbuilder6\Bin\dclbcbsmp60.bpl=Borland Sample Controls Design Time Package
+c:\program files\cbuilder6\Bin\bcb2kaxserver60.bpl=Borland C++Builder COM Server Components Sample Package
+
+[HistoryLists\hlIncludePath]
+Count=16
+Item0=C:\Program Files\CBuilder6\Projects;$(BCB)\include;C:\programs\FarHeaders
+Item1=$(BCB)\include;C:\programs\FarHeaders
+Item2=C:\Program Files\CBuilder6\Projects;..;$(BCB)\include;C:\programs\FarHeaders
+Item3=..\;$(BCB)\include;C:\programs\FarHeaders
+Item4=..\;..;$(BCB)\include;C:\programs\FarHeaders
+Item5=..\;$(BCB)\include
+Item6=$(BCB)\include
+Item7=..\;$(BCB)\include;$(BCB)\include\vcl
+Item8=$(BCB)\include;$(BCB)\include\vcl
+Item9=..\mircdll;$(BCB)\include;$(BCB)\include\vcl
+Item10=C:\programs\mircdll;$(BCB)\include;$(BCB)\include\vcl
+Item11=C:\Program Files\CBuilder6\Projects;C:\programs\LittleTask;$(BCB)\include;$(BCB)\include\vcl
+Item12=C:\programs\ProgressBar;C:\programs\addrbook;C:\Program Files\CBuilder6\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item13=C:\programs\addrbook;C:\Program Files\CBuilder6\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item14=C:\programs\addrbook;C:\Program Files\CBuilder6\Projects;C:\programs\storage;$(BCB)\include;$(BCB)\include\vcl
+Item15=C:\Program Files\CBuilder6\Projects;C:\programs\storage;$(BCB)\include;$(BCB)\include\vcl
+
+[HistoryLists\hlLibraryPath]
+Count=14
+Item0=C:\Program Files\CBuilder6\Projects;$(BCB)\lib
+Item1=$(BCB)\lib
+Item2=C:\Program Files\CBuilder6\Projects;..;$(BCB)\lib
+Item3=..\;$(BCB)\lib
+Item4=..\;..;$(BCB)\lib
+Item5=..\;$(BCB)\lib\obj;$(BCB)\lib
+Item6=$(BCB)\lib\obj;$(BCB)\lib
+Item7=..\mircdll;$(BCB)\lib\obj;$(BCB)\lib
+Item8=C:\programs\mircdll;$(BCB)\lib\obj;$(BCB)\lib
+Item9=C:\Program Files\CBuilder6\Projects;C:\programs\LittleTask;$(BCB)\lib\obj;$(BCB)\lib
+Item10=C:\programs\ProgressBar;C:\programs\addrbook;C:\Program Files\CBuilder6\Projects;$(BCB)\lib\obj;$(BCB)\lib
+Item11=C:\programs\addrbook;C:\Program Files\CBuilder6\Projects;$(BCB)\lib\obj;$(BCB)\lib
+Item12=C:\programs\addrbook;C:\Program Files\CBuilder6\Projects;C:\programs\storage;$(BCB)\lib\obj;$(BCB)\lib
+Item13=C:\Program Files\CBuilder6\Projects;C:\programs\storage;$(BCB)\lib\obj;$(BCB)\lib
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[HistoryLists\hlConditionals]
+Count=11
+Item0=__STDLIB_H_USING_LIST;__STRING_H_USING_LIST;__MEM_H_USING_LIST;__CTYPE_H_USING_LIST;STRICT
+Item1=__STDLIB_H_USING_LIST;__STRING_H_USING_LIST;__MEM_H_USING_LIST;__CTYPE_H_USING_LIST;STRICT;_DEBUG
+Item2=_DEBUG
+Item3=_DEBUG;__USE_OWN_RTL__;__STDLIB_H;__STDLIB_H_USING_LIST;__MEM_H_USING_LIST;__MEM_H
+Item4=_DEBUG;__USE_OWN_RTL__;__STDLIB_H;__STDLIB_H_USING_LIST
+Item5=_DEBUG;__USE_OWN_RTL__;__ALLOC_H;__MALLOC_H;__ALLOC_H_USING_LIST;__STDLIB_H;__STDLIB_H_USING_LIST
+Item6=_DEBUG;__USE_OWN_RTL__;__ALLOC_H;__MALLOC_H;__ALLOC_H_USING_LIST;__STDLIB_H
+Item7=_DEBUG;__USE_OWN_RTL__;__ALLOC_H;__MALLOC_H;__ALLOC_H_USING_LIST
+Item8=_DEBUG;__USE_OWN_RTL__;__ALLOC_H;__MALLOC_H
+Item9=_DEBUG;__USE_OWN_RTL__;__ALLOC_H
+Item10=_DEBUG;__USE_OWN_RTL__
+
+[HistoryLists\hlFinalOutputDir]
+Count=2
+Item0=C:\Far\Plugins\EMBview\
+Item1=C:\Far\Plugins\EMBview
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+Launcher=
+UseLauncher=0
+DebugCWD=
+HostApplication=C:\Far\Far.exe
+RemoteHost=
+RemotePath=
+RemoteLauncher=
+RemoteCWD=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>
