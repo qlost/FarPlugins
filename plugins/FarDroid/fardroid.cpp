@@ -1663,7 +1663,7 @@ int fardroid::GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
   wchar_t szConsoleTitle[MAX_PATH];
   GetConsoleTitle(szConsoleTitle, MAX_PATH);
   procStruct.pType = PS_SCAN;
-  procStruct.bSilent = bSilent;
+  procStruct.bSilent = false;
   procStruct.title = GetMsg(MScanDirectory);
   procStruct.data[PT_ITEMS].total = 0;
   procStruct.data[PT_ALL].current = 0;
@@ -1844,7 +1844,7 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
   wchar_t szConsoleTitle[MAX_PATH];
   GetConsoleTitle(szConsoleTitle, MAX_PATH);
   procStruct.pType = PS_SCAN;
-  procStruct.bSilent = bSilent;
+  procStruct.bSilent = false;
   procStruct.title = GetMsg(MScanDirectory);
   procStruct.data[PT_ITEMS].total = 0;
   procStruct.data[PT_ALL].current = 0;
