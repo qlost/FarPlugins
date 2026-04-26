@@ -103,11 +103,12 @@ typedef union {
     unsigned namelen;
   } dent;
   struct {
-    UINT64 id;
-    UINT64 unk0;
+    unsigned id;
+    unsigned unk0;
     UINT64 unk1;
-    UINT64 mode;
     UINT64 unk2;
+    UINT64 mode;
+    UINT64 unk3;
     UINT64 size;
     UINT64 ctime;
     UINT64 mtime;
