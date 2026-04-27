@@ -953,11 +953,14 @@ bool fardroid::UpdateInfoLines()
 
   GetPartitionsInfo();
 
-  size_t len = lines.size();
-  if (!InfoPanelLineArray && len > 0)
+  if (InfoPanelLineArray) {
+    delete[] InfoPanelLineArray;
+    InfoPanelLineArray = NULL;
+  }
+  if (lines.size() > 0)
   {
-    InfoPanelLineArray = new InfoPanelLine[len];
-    for (size_t i = 0; i < len; i++)
+    InfoPanelLineArray = new InfoPanelLine[lines.size()];
+    for (size_t i = 0; i < lines.size(); i++)
     {
       InfoPanelLineArray[i].Text = lines[i]->text;
       InfoPanelLineArray[i].Data = lines[i]->data;
@@ -980,10 +983,6 @@ void fardroid::ChangeDir(const wchar_t *sDir)
   }
   else
     currentPath = ConcatPath(currentPath, sDir);
-  panelTitle = currentDeviceName;
-  panelTitle += currentPath;
-  panelTitle += Opt.SU ? L" #" : L" $";
-  DEBUGLOG(panelTitle.CPtr());
 }
 
 HANDLE fardroid::OpenFromMainMenu()
@@ -1040,6 +1039,9 @@ void fardroid::PreparePanel(OpenPanelInfo *Info)
     if (currentPath.startsWith(infoSize[i]->path))
       size = infoSize[i]->free;
   Info->FreeSize = size;
+  panelTitle = currentDeviceName;
+  panelTitle += currentPath;
+  panelTitle += Opt.SU ? L" #" : L" $";
   Info->PanelTitle = panelTitle.CPtr();
   Info->CurDir = currentPath.CPtr();
   Info->InfoLines = InfoPanelLineArray;
@@ -1080,12 +1082,10 @@ bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNu
         }
       }
     }
-    return true;
   }
-  else {
-    ChangeDir(L"/");
-    return false;
-  }
+  else
+    *pItemsNumber = 0;
+  return true;
 }
 
 int fardroid::DeviceMenu(string &text)

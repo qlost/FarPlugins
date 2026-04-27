@@ -208,6 +208,14 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     settings.Set(0, L"CopySD", Opt.CopySD);
     settings.Set(0, L"AddToDiskMenu", Opt.AddToDiskMenu);
     settings.Set(0, L"RemountSystem", Opt.RemountSystem);
+
+    PanelInfo PInfo{sizeof(PanelInfo)};
+    PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELINFO, 0, (void*)&PInfo);
+    if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid)
+      ((fardroid*)PInfo.PluginHandle)->UpdateInfoLines();
+    PsInfo.PanelControl(PANEL_PASSIVE, FCTL_GETPANELINFO, 0, (void*)&PInfo);
+    if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid)
+      ((fardroid*)PInfo.PluginHandle)->UpdateInfoLines();
     return true;
   }
   else

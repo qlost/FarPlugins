@@ -87,7 +87,6 @@ private:
   bool          GetMemoryInfo();
   void          ParsePartitionInfo(wchar_t *sLine);
   void          GetPartitionsInfo();
-  bool          UpdateInfoLines();
   int           DeviceMenu(string &text);
   void          SetProgress(unsigned type);
   void          DrawProgress(wchar_t *buf, unsigned size, unsigned type);
@@ -101,6 +100,7 @@ public:
   ~fardroid();
 
   void                DeviceNameDialog();
+  bool                UpdateInfoLines();
   void                ChangeDir(const wchar_t *sDir);
   HANDLE              OpenFromMainMenu();
   HANDLE              OpenFromCommandLine(const wchar_t *cmd);
