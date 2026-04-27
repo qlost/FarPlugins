@@ -112,8 +112,7 @@ public:
   bool                DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERATION_MODES OpMode);
   int                 CreateDir(const wchar_t **DestPath, OPERATION_MODES OpMode);
   bool                Copy_Rename(bool is_copy);
-  int                 GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **DestPath, bool is_move, OPERATION_MODES OpMode);
-  int                 PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t *SrcPath, bool is_move, OPERATION_MODES OpMode);
+  int                 CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **Path, bool is_move, OPERATION_MODES OpMode);
 };
 
 class Socket

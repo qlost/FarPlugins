@@ -1648,157 +1648,6 @@ int fardroid::CopyErrorDialog(const wchar_t *sTitle, string &sRes)
   }
 }
 
-int fardroid::GetFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **DestPath, bool is_move, OPERATION_MODES OpMode)
-{FUNCTION
-  bool bSilent = (OpMode & (OPM_SILENT|OPM_FIND)) != 0;
-
-  if ((OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) == 0) {
-    wchar_t editbuf[100];
-    if (!PsInfo.InputBox(&MainGuid, nullptr, GetMsg(is_move ? MMoveFile: MGetFile), GetMsg(MCopyDest), nullptr, *DestPath, editbuf, _ARRAYSIZE(editbuf), L"CopyDialog", FIB_NONE))
-      return ABORT;
-    storedPath = editbuf;
-    *DestPath = storedPath.CPtr();
-  }
-
-  wchar_t szConsoleTitle[MAX_PATH];
-  GetConsoleTitle(szConsoleTitle, MAX_PATH);
-  procStruct.pType = PS_SCAN;
-  procStruct.bSilent = false;
-  procStruct.title = GetMsg(MScanDirectory);
-  procStruct.data[PT_ITEMS].total = 0;
-  procStruct.data[PT_ALL].current = 0;
-  procStruct.data[PT_ALL].total = 0;
-  procStruct.nTotalStartTime = GetTickCount();
-
-  // Получение полного списка всех файлов с учётом вложенных каталогов
-  // Полное имя хранится только у каталогов
-  // Файлы берут его по ссылке на родительский каталог
-  CCopyRecord *rec;
-  bool is_break = false;
-  PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_INDETERMINATE, nullptr);
-  copy_recs.Add(new CCopyRecord{0, currentPath, *DestPath, 0, {}, {}, {}, true}); //корневой уровень с полными именами исходных каталогов
-  procStruct.data[PT_ITEMS].total++;
-  for (size_t i = 0; i < ItemsNumber; i++) {
-    if (CheckForEsc()) {
-      is_break = true;
-      break;
-    }
-    ShowProgressMessage();
-
-    procStruct.data[PT_ITEMS].total++;
-    rec = new CCopyRecord;
-    copy_recs.Add(rec);
-    rec->parent = 0;
-    rec->ctime = PanelItem[i].CreationTime;
-    rec->mtime = PanelItem[i].ChangeTime;
-    rec->atime = PanelItem[i].LastAccessTime;
-    rec->is_dir = PanelItem[i].FileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-    if (rec->is_dir) {
-      rec->src = ConcatPath(copy_recs[0]->src, PanelItem[i].FileName);
-      rec->dst = ConcatPath(copy_recs[0]->dst, PanelItem[i].FileName);
-      rec->size = 0;
-      if (!ADBScanDirectory(copy_recs.size()-1)) {
-        is_break = true;
-        break;
-      }
-    }
-    else {
-      rec->src = PanelItem[i].FileName;
-      rec->size = PanelItem[i].FileSize;
-      procStruct.data[PT_ALL].total += rec->size;
-    }
-  }
-  #ifdef USE_DEBUG
-  string log;
-  for (size_t i = 0; i < copy_recs.size(); i++) {
-    log.Format(L"%u|%s|%s|%llu|%u\n", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
-    char *s = log.toUTF8();
-    DEBUGBUF(s, (DWORD)log.UTFLen());
-  }
-  #endif
-
-  if (!is_break) {
-    string sd_name, sRes;
-    const wchar_t *msg[]{GetMsg(MGetFile), GetMsg(MCopyWarnIfExists), NULL, GetMsg(MYes), GetMsg(MNo), GetMsg(MAlwaysYes), GetMsg(MAlwaysNo), GetMsg(MCancel)};
-    intptr_t exResult = bSilent ? 2 : 0;
-    procStruct.pType = is_move ? PS_MOVE : PS_COPY;
-    procStruct.title = GetMsg(is_move ? MMoveFile: MGetFile);
-    procStruct.nTotalStartTime = GetTickCount();
-    PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
-
-    for (size_t i = 1; i < copy_recs.size(); i++) { //пропуск корневого элемента
-      procStruct.data[PT_ITEMS].current = i;
-      if (CheckForEsc()) {
-        is_break = true;
-        break;
-      }
-
-      if (copy_recs[i]->is_dir)
-        CreateDirectory(copy_recs[i]->dst.CPtr(), NULL);
-      else {
-        procStruct.from = ConcatPath(copy_recs[copy_recs[i]->parent]->src, copy_recs[i]->src.CPtr());
-        procStruct.to = ConcatPath(copy_recs[copy_recs[i]->parent]->dst, copy_recs[i]->src.CPtr());
-        procStruct.data[PT_ONE].current = 0;
-        procStruct.data[PT_ONE].total = copy_recs[i]->size;
-        ShowProgressMessage();
-
-        bool need_pull;
-        if (GetFileAttributes(procStruct.to.CPtr()) == INVALID_FILE_ATTRIBUTES) //Файл не существует?
-          need_pull = true;
-        else { //Файл существует?
-          if (exResult != 2 && exResult != 3) { //не тихий режим и ещё не выбраны "Всегда да" и "Всегда нет"?
-            msg[2] = procStruct.to.CPtr();
-            exResult = PsInfo.Message(&MainGuid, &MsgGuid, FMSG_WARNING, L"warnifexists", msg, _ARRAYSIZE(msg), 5);
-            if (exResult < 0 || exResult > 3) {
-              is_break = true;
-              break;
-            }
-          }
-          need_pull = (exResult == 0) || (exResult == 2);
-        }
-
-        int result;
-        if (need_pull) { //Yes
-          sd_name = L"/sdcard/";
-          sd_name += copy_recs[i]->src;
-          sd_name += L".fardroid";
-          do {
-            sRes.Clear();
-            if (Opt.SU && Opt.CopySD && !wcsstr(procStruct.from.CPtr(), L"/sdcard") && !wcsstr(procStruct.from.CPtr(), L"/emulated")) {//включено предварительное копирование на sd и файл скачивается не с sd-карты?
-              result = ADB_copy(procStruct.from.CPtr(), sd_name.CPtr(), sRes);
-              if (result)
-                result = ADB_pull(sd_name, procStruct.to.CPtr(), sRes, copy_recs[i]);
-              DeleteFileFrom(sd_name.CPtr(), true);
-            }
-            else
-              result = ADB_pull(procStruct.from, procStruct.to.CPtr(), sRes, copy_recs[i]);
-
-            if (!result)
-              if (sRes.IsEmpty())
-                result = ABORT;
-              else
-                result = CopyErrorDialog(GetMsg(MGetFile), sRes);
-          } while (result == RETRY);
-        }
-        else //No == skip
-          result = SKIP;
-
-        if (result == SKIP)
-          procStruct.data[PT_ALL].total -= copy_recs[i]->size;
-        else if (result == ABORT) {
-          is_break = true;
-          break;
-        }
-      }
-    }
-    PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
-  }
-  PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
-  SetConsoleTitle(szConsoleTitle);
-  copy_recs.RemoveAll();
-  return is_break ? -1 : 1;
-}
-
 bool fardroid::ScanDirectory(size_t parent)
 {FUNCTION
   WIN32_FIND_DATA fd;
@@ -1838,9 +1687,18 @@ bool fardroid::ScanDirectory(size_t parent)
   return true;
 }
 
-int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t *SrcPath, bool is_move, OPERATION_MODES OpMode)
-{
+int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **Path, bool is_move, OPERATION_MODES OpMode)
+{FUNCTION
   bool bSilent = (OpMode & (OPM_SILENT|OPM_FIND)) != 0;
+
+  if (is_get && (OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) == 0) {
+    wchar_t editbuf[100];
+    if (!PsInfo.InputBox(&MainGuid, nullptr, GetMsg(is_move ? MMoveFile: MGetFile), GetMsg(MCopyDest), nullptr, *Path, editbuf, _ARRAYSIZE(editbuf), L"CopyDialog", FIB_NONE))
+      return ABORT;
+    storedPath = editbuf;
+    *Path = storedPath.CPtr();
+  }
+
   wchar_t szConsoleTitle[MAX_PATH];
   GetConsoleTitle(szConsoleTitle, MAX_PATH);
   procStruct.pType = PS_SCAN;
@@ -1857,7 +1715,7 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
   CCopyRecord *rec;
   bool is_break = false;
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_INDETERMINATE, nullptr);
-  copy_recs.Add(new CCopyRecord{0, SrcPath, currentPath, 0, {}, {}, {}, true}); //корневой уровень с полными именами исходных каталогов
+  copy_recs.Add(new CCopyRecord{0, (is_get ? currentPath.CPtr() : *Path), (is_get ? *Path : currentPath.CPtr()), 0, {}, {}, {}, true}); //корневой уровень с полными именами исходных каталогов
   procStruct.data[PT_ITEMS].total++;
   for (size_t i = 0; i < ItemsNumber; i++) {
     if (CheckForEsc()) {
@@ -1878,7 +1736,10 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
       rec->src = ConcatPath(copy_recs[0]->src, PanelItem[i].FileName);
       rec->dst = ConcatPath(copy_recs[0]->dst, PanelItem[i].FileName);
       rec->size = 0;
-      if (!ScanDirectory(copy_recs.size()-1)) {
+      if (
+        is_get && !ADBScanDirectory(copy_recs.size()-1) ||
+        !is_get && !ScanDirectory(copy_recs.size()-1)
+      ) {
         is_break = true;
         break;
       }
@@ -1915,7 +1776,10 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
       }
 
       if (copy_recs[i]->is_dir)
-        ADB_mkdir(copy_recs[i]->dst.CPtr(), sRes);
+        if (is_get)
+          CreateDirectory(copy_recs[i]->dst.CPtr(), NULL);
+        else
+          ADB_mkdir(copy_recs[i]->dst.CPtr(), sRes);
       else {
         procStruct.from = ConcatPath(copy_recs[copy_recs[i]->parent]->src, copy_recs[i]->src.CPtr());
         procStruct.to = ConcatPath(copy_recs[copy_recs[i]->parent]->dst, copy_recs[i]->src.CPtr());
@@ -1923,11 +1787,14 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
         procStruct.data[PT_ONE].total = copy_recs[i]->size;
         ShowProgressMessage();
 
-        bool need_push;
-        unsigned mode = ADB_stat(procStruct.to);
-        if (!mode) { //Файл не существует?
+        bool need_copy;
+        unsigned mode;
+        // Файл не существует?
+        if (is_get && GetFileAttributes(procStruct.to.CPtr()) == INVALID_FILE_ATTRIBUTES)
+          need_copy = true;
+        else if (!is_get && !(mode = ADB_stat(procStruct.to))) {
           mode = 0664;
-          need_push = true;
+          need_copy = true;
         }
         else { //Файл существует?
           if (exResult != 2 && exResult != 3) { //не тихий режим и ещё не выбраны "Всегда да" и "Всегда нет"?
@@ -1938,23 +1805,35 @@ int fardroid::PutFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, const wch
               break;
             }
           }
-          need_push = (exResult == 0) || (exResult == 2);
+          need_copy = (exResult == 0) || (exResult == 2);
         }
 
         int result;
-        if (need_push) { //Yes
+        if (need_copy) { //Yes
           sd_name = L"/sdcard/";
           sd_name += copy_recs[i]->src;
           sd_name += L".fardroid";
           do {
             sRes.Clear();
-            if (Opt.SU && Opt.CopySD && !wcsstr(procStruct.to.CPtr(), L"/sdcard") && !wcsstr(procStruct.to.CPtr(), L"/emulated")) {//включено предварительное копирование на sd и файл закачивается не на sd-карту?
-              result = ADB_push(procStruct.from.CPtr(), sd_name, sRes, mode);
-              if (result)
-                result = ADB_rename(sd_name.CPtr(), procStruct.to.CPtr(), sRes);
+            const wchar_t *spath = is_get ? procStruct.from.CPtr() : procStruct.to.CPtr();
+            if (Opt.SU && Opt.CopySD && !wcsstr(spath, L"/sdcard") && !wcsstr(spath, L"/emulated")) {//включено предварительное копирование на sd и источник/назначение не на sd-карте?
+              if (is_get) {
+                result = ADB_copy(procStruct.from.CPtr(), sd_name.CPtr(), sRes);
+                if (result)
+                  result = ADB_pull(sd_name, procStruct.to.CPtr(), sRes, copy_recs[i]);
+                DeleteFileFrom(sd_name.CPtr(), true);
+              }
+              else {
+                result = ADB_push(procStruct.from.CPtr(), sd_name, sRes, mode);
+                if (result)
+                  result = ADB_rename(sd_name.CPtr(), procStruct.to.CPtr(), sRes);
+              }
             }
             else
-              result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes, mode);
+              if (is_get)
+                result = ADB_pull(procStruct.from, procStruct.to.CPtr(), sRes, copy_recs[i]);
+              else
+                result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes, mode);
 
             if (!result)
               if (sRes.IsEmpty())

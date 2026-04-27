@@ -381,7 +381,7 @@ intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
   if (!Info->hPanel || Info->ItemsNumber == 1 && !lstrcmp(Info->PanelItem[0].FileName, L".."))
     return -1;
 
-  int result = ((fardroid*)Info->hPanel)->GetFiles(Info->PanelItem, Info->ItemsNumber, &Info->DestPath, Info->Move, Info->OpMode);
+  int result = ((fardroid*)Info->hPanel)->CopyFiles(true, Info->PanelItem, Info->ItemsNumber, &Info->DestPath, Info->Move, Info->OpMode);
   if (result <= 0)
     return result;
 
@@ -394,7 +394,7 @@ intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
     return -1;
 
   fardroid* android = (fardroid*)Info->hPanel;
-  int result = ((fardroid*)Info->hPanel)->PutFiles(Info->PanelItem, Info->ItemsNumber, Info->SrcPath, Info->Move, Info->OpMode);
+  int result = ((fardroid*)Info->hPanel)->CopyFiles(false, Info->PanelItem, Info->ItemsNumber, (const wchar_t**)&Info->SrcPath, Info->Move, Info->OpMode);
   if (result <= 0)
     return result;
 
