@@ -245,7 +245,7 @@ bool Socket::ADBPullFile(string &sSrc, const wchar_t *sDst, string &sRes, const 
   bool result = true;
   msg.req.id = ID_RECV;
   msg.req.namelen = (unsigned)sSrc.UTFLen();
-  if (SendADBPacket(&msg.req, sizeof(msg.req)) & SendADBPacket(s, (int)sSrc.UTFLen())) {
+  if (SendADBPacket(&msg.req, sizeof(msg.req)) && SendADBPacket(s, (int)sSrc.UTFLen())) {
     DEBUGNL();
     char *buffer = new char[SYNC_DATA_MAX];
     DWORD written;
@@ -295,6 +295,8 @@ bool Socket::ADBPullFile(string &sSrc, const wchar_t *sDst, string &sRes, const 
     }//while
     delete[] buffer;
   }
+  else
+    result = false;
   DEBUGNL();
   if (hFile)
     CloseHandle(hFile);
@@ -365,6 +367,8 @@ bool Socket::ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes, unsign
         result = false;
     }
   }
+  else
+    result = false;
   DEBUGNL();
   return result;
 }
@@ -1348,7 +1352,7 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
       item = GetSelectedPanelItem(0);
       if (item) {
         bool chk = ((!lstrcmp(owner, item->Owner) && !lstrcmp(group, (wchar_t*)item->UserData.Data)) || ADB_chown(item->FileName, owner, group, sRes)) &&
-                  (prm == item->CRC32 || ADB_chmod(item->FileName, octal, sRes));
+                   (prm == item->CRC32 || ADB_chmod(item->FileName, octal, sRes));
         free(item);
         if (chk)
           PsInfo.PanelControl(PANEL_ACTIVE, FCTL_CLEARSELECTION, i, FALSE);
@@ -1845,11 +1849,15 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         else //No == skip
           result = SKIP;
 
-        if (result == SKIP)
-          procStruct.data[PT_ALL].total -= copy_recs[i]->size;
-        else if (result == ABORT) {
+        if (result == ABORT) {
           is_break = true;
           break;
+        }
+        else {
+          if (copy_recs[i]->parent == 0) //элемент с панели (а не из вложенного каталога)?
+            PanelItem[i-1].Flags &= ~PPIF_SELECTED;
+          if (result == SKIP)
+            procStruct.data[PT_ALL].total -= copy_recs[i]->size;
         }
       }//copy file
     }//for
