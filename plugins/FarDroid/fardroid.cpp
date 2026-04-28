@@ -409,14 +409,6 @@ fardroid::~fardroid()
 
 bool fardroid::ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs)
 {
-  if (sFileList.startsWith(L"ls:")) {
-    if (!bSilent) {
-      sFileList.Insert(0, L'\n').Append(L"OK");
-      PsInfo.Message(&MainGuid, &MsgGuid, FMSG_WARNING | FMSG_ALLINONE, NULL, (const wchar_t* const*)sFileList.CPtr(), 0, 1);
-    }
-    return false;
-  }
-
   RegExpMatch *match;
   wchar_t *p = (wchar_t*)sFileList.CPtr(), *sLine;
   while (true) {
@@ -428,6 +420,7 @@ bool fardroid::ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs)
     if (
       *sLine &&
       wcsncmp(sLine, L"total", 5) &&
+      wcsncmp(sLine, L"ls:", 3) &&
       lstrcmp(sLine + len - 3, L" ..") &&
       lstrcmp(sLine + len - 2, L" .")
     ) {
