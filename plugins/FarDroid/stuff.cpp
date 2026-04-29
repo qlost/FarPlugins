@@ -77,23 +77,16 @@ void RegexpFree(HANDLE hRegex)
     PsInfo.RegExpControl(hRegex, RECTL_FREE, 0, nullptr);
 }
 
-int RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool set_end)
+intptr_t RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool set_end)
 {
-  int brackets = 0;
+  intptr_t brackets = 0;
   *match = NULL;
   if (hRegex) {
-    brackets = (int)PsInfo.RegExpControl(hRegex, RECTL_BRACKETSCOUNT, 0, nullptr);
+    brackets = PsInfo.RegExpControl(hRegex, RECTL_BRACKETSCOUNT, 0, nullptr);
     if (brackets > 1) {
       *match = new RegExpMatch[brackets];
       if (*match) {
-        RegExpSearch search = {
-            str,
-            0,
-            lstrlen(str),
-            *match,
-            brackets,
-            nullptr
-        };
+        RegExpSearch search{str, 0, lstrlen(str), *match, brackets, nullptr};
 
         if (!PsInfo.RegExpControl(hRegex, RECTL_SEARCHEX, 0, (void*)&search)) {
           delete[] *match;
@@ -101,7 +94,7 @@ int RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool set_end
           brackets = 0;
         }
         else if (set_end)
-          for (int i = 0; i < brackets; i++) //конец строки после каждой скобки (т.к. после них всегда есть пробел)
+          for (intptr_t i = 0; i < brackets; i++) //конец строки после каждой скобки (т.к. после них всегда есть пробел)
             if ((*match)[i].end > 0)
               str[(*match)[i].end] = L'\0';
       }

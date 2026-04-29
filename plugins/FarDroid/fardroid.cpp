@@ -741,14 +741,27 @@ void fardroid::DeviceNameDialog()
 
 void fardroid::CheckCapabilities()
 {FUNCTION
-  string sRes, cmd = L"ls -N";
+  string sRes, cmd = L"ls -Nla";
   {
     Socket sock(this);
-    Opt.UseLS_N = sock && sock.ADBShellExecute(cmd, sRes) && !wcsstr(sRes.CPtr(), L"nknown option");
+    Opt.UseLS_N = false;
+    if (sock && sock.ADBShellExecute(cmd, sRes)) {
+      if (sRes.startsWith(L"total")) //хотя бы не ошибка?
+        Opt.UseLS_N = true;
+      else { //но встречаются случаи без total в начале
+        wchar_t *sLine = wcstok((wchar_t*)sRes.CPtr(), L"\n");
+        if (sLine && *sLine) {
+          RegExpSearch search{sLine, 0, lstrlen(sLine), NULL, 0, nullptr};
+          if (PsInfo.RegExpControl(hRegexpFile, RECTL_MATCHEX, 0, (void*)&search)) //первая строка сматчилась по файловому регэкспу?
+            Opt.UseLS_N = true;
+        }
+      }
+    }
   }
 
   {
     Socket sock(this);
+    sRes.Clear();
     cmd = L"sync:";
     if (sock.SendADBCommand(cmd))
     {

@@ -152,11 +152,11 @@ BOOL    ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wc
 string& EscapeCommand(string &cmd, bool quoted = false);
 string  ConcatPath(string &left, const wchar_t *right);
 
-HANDLE  RegexpMake(const wchar_t *regex);
-void    RegexpFree(HANDLE hRegex);
-int     RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool set_end);
-UINT64  ParseSizeInfo(wchar_t *s);
-void    CopyMatch(string &dst, wchar_t *src, RegExpMatch &m);
+HANDLE    RegexpMake(const wchar_t *regex);
+void      RegexpFree(HANDLE hRegex);
+intptr_t  RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool set_end);
+UINT64    ParseSizeInfo(wchar_t *s);
+void      CopyMatch(string &dst, wchar_t *src, RegExpMatch &m);
 
 wchar_t*        GetDeviceName(wchar_t *device);
 unsigned short  GetMonth(const wchar_t *sMonth);
