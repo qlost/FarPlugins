@@ -1479,8 +1479,9 @@ void fardroid::ShowProgressMessage()
     const unsigned PROGRESS_SIZE = 50;
     wchar_t buf[PROGRESS_SIZE + 6];
     DrawProgress(buf, PROGRESS_SIZE, PT_ITEMS);
-    FSF.TruncPathStr((wchar_t*)procStruct.from.CPtr(), PROGRESS_SIZE + 5);
-    const wchar_t *msg[]{procStruct.title, procStruct.from.CPtr(), buf};
+    string sFrom = procStruct.from;
+    FSF.TruncPathStr((wchar_t*)sFrom.CPtr(), PROGRESS_SIZE + 5);
+    const wchar_t *msg[]{procStruct.title, sFrom.CPtr(), buf};
     PsInfo.Message(&MainGuid, &MsgWaitGuid, FMSG_LEFTALIGN, nullptr, msg, _ARRAYSIZE(msg), 0);
   }
   else if (procStruct.pType == PS_FB)
