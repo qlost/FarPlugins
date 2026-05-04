@@ -210,12 +210,11 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     settings.Set(0, L"RemountSystem", Opt.RemountSystem);
 
     PanelInfo PInfo{sizeof(PanelInfo)};
-    PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELINFO, 0, (void*)&PInfo);
-    if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid)
-      ((fardroid*)PInfo.PluginHandle)->UpdateInfoLines();
-    PsInfo.PanelControl(PANEL_PASSIVE, FCTL_GETPANELINFO, 0, (void*)&PInfo);
-    if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid)
-      ((fardroid*)PInfo.PluginHandle)->UpdateInfoLines();
+    for (HANDLE h = PANEL_ACTIVE; h >= PANEL_PASSIVE; h = (HANDLE)((intptr_t)h - (intptr_t)PANEL_ACTIVE + (intptr_t)PANEL_PASSIVE)) {
+      PsInfo.PanelControl(h, FCTL_GETPANELINFO, 0, (void*)&PInfo);
+      if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid)
+        ((fardroid*)PInfo.PluginHandle)->UpdateInfoLines();
+    }
     return true;
   }
   else
