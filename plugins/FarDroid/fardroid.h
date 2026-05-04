@@ -82,6 +82,7 @@ private:
 
   bool          CheckForEsc();
   void          DeviceNameDialog(const wchar_t *name);
+  bool          CheckLSOption(const wchar_t *s_cmd, bool &hasEsc);
   void          CheckCapabilities();
   bool          GetDeviceInfo();
   bool          GetMemoryInfo();

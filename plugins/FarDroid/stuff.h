@@ -78,8 +78,9 @@ struct Options {
   bool    UseSU;
   bool    CopySD;
   bool    RemountSystem;
-  bool    UseLS_N;
-  bool    UseLIS2;
+  bool    UseLIS2; //доступна 2я версия получения списка файлов ?
+  bool    UseLS_N; //доступно отключение экранирования символов ls -N ?
+  bool    UseNoColor; //доступна опция ls --color=never ?
 };
 
 #pragma pack(push, 1)

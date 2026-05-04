@@ -490,15 +490,14 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
   if (Opt.WorkMode != WORKMODE_SAFE)
   {
     string cmd, sRes;
-    switch (Opt.WorkMode)
-    {
-    case WORKMODE_NATIVE:
-      cmd.Format(L"ls -la%s \"%s/\"", Opt.UseLS_N ? L"N" : L"", sDir);
-      break;
-    case WORKMODE_BUSYBOX:
-      cmd.Format(L"busybox ls -la%s%s --color=never \"%s\"", Opt.UseLS_N ? L"N" : L"", Opt.ShowLinksAsDir ? L"" : L"L", sDir);
-      break;
-    }
+    cmd.Format(
+      L"%sls -la%s%s%s \"%s/\"",
+      Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"",
+      Opt.UseLS_N ? L"N" : L"",
+      Opt.WorkMode == WORKMODE_BUSYBOX && Opt.ShowLinksAsDir ? L"L" : L"",
+      Opt.UseNoColor ? L" --color=never" : L"",
+      sDir
+    );
     if (sock.ADBShellExecute(cmd, sRes))
       return ReadFileList(sRes, bSilent, recs);
   }
@@ -739,37 +738,39 @@ void fardroid::DeviceNameDialog()
   DeviceNameDialog(currentDevice);
 }
 
-void fardroid::CheckCapabilities()
+bool fardroid::CheckLSOption(const wchar_t *s_cmd, bool &hasEsc)
 {FUNCTION
-  string sRes, cmd = L"ls -Nla";
-  {
-    Socket sock(this);
-    Opt.UseLS_N = false;
-    if (sock && sock.ADBShellExecute(cmd, sRes)) {
-      if (sRes.startsWith(L"total")) //хотя бы не ошибка?
-        Opt.UseLS_N = true;
-      else { //но встречаются случаи без total в начале
-        wchar_t *sLine = wcstok((wchar_t*)sRes.CPtr(), L"\n");
-        if (sLine && *sLine) {
-          RegExpSearch search{sLine, 0, lstrlen(sLine), NULL, 0, nullptr};
-          if (PsInfo.RegExpControl(hRegexpFile, RECTL_MATCHEX, 0, (void*)&search)) //первая строка сматчилась по файловому регэкспу?
-            Opt.UseLS_N = true;
-        }
+  Socket sock(this);
+  bool option = false;
+  string sRes, cmd;
+  cmd = (Opt.WorkMode == WORKMODE_BUSYBOX) ? L"busybox " : L"";
+  cmd += s_cmd;
+  if (sock && sock.ADBShellExecute(cmd, sRes)) {
+    if (sRes.startsWith(L"total")) //хотя бы не ошибка?
+      option = true;
+    else { //но встречаются случаи без total в начале
+      wchar_t *sLine = wcstok((wchar_t*)sRes.CPtr(), L"\n");
+      if (sLine && *sLine) {
+        RegExpSearch search{sLine, 0, lstrlen(sLine), NULL, 0, nullptr};
+        if (PsInfo.RegExpControl(hRegexpFile, RECTL_MATCHEX, 0, (void*)&search)) //первая строка сматчилась по файловому регэкспу?
+          option = true;
       }
     }
   }
+  hasEsc = wcsstr(sRes.CPtr(), L"\x1b[") != NULL;
+  return option;
+}
 
-  {
+void fardroid::CheckCapabilities()
+{FUNCTION
+  if (Opt.WorkMode == WORKMODE_SAFE) {
     Socket sock(this);
-    sRes.Clear();
-    cmd = L"sync:";
-    if (sock.SendADBCommand(cmd))
-    {
+    string sRes, cmd = L"sync:";
+    if (sock.SendADBCommand(cmd)) {
       syncmsg msg;
       msg.req.id = ID_LIS2;
       msg.req.namelen = 1;
-      if (sock.SendADBPacket(&msg.req, sizeof(msg.req)) && sock.SendADBPacket((void*)"/", msg.req.namelen))
-      {
+      if (sock.SendADBPacket(&msg.req, sizeof(msg.req)) && sock.SendADBPacket((void*)"/", msg.req.namelen)) {
         DEBUGNL();
         int ret = sock.ReadADBPacket(&msg.data, sizeof(msg.data));
         if (ret <= 0)
@@ -783,8 +784,16 @@ void fardroid::CheckCapabilities()
       }
     }
   }
-  sRes.Format(L"UseLS_N=%u  UseLIS2=%u", Opt.UseLS_N, Opt.UseLIS2);
-  DEBUGLOG(sRes.CPtr());
+  else {
+    bool hasEsc;
+    Opt.UseLS_N = CheckLSOption(L"ls -Nla", hasEsc);
+    Opt.UseNoColor = hasEsc && CheckLSOption(L"ls -la --color=never", hasEsc);
+  }
+#ifdef USE_DEBUG
+  string log;
+  log.Format(L"UseLIS2=%u  UseLS_N=%u  UseNoColor=%u", Opt.UseLIS2, Opt.UseLS_N, Opt.UseNoColor);
+  DEBUGLOG(log.CPtr());
+#endif
 }
 
 bool fardroid::GetDeviceInfo()
