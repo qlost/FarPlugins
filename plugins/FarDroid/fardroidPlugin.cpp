@@ -159,7 +159,7 @@ intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* 
         ((FarDialogItemColors*)Param2)->Colors[0].ForegroundColor = 0x4;
     }
   }
-  else if (Msg == DN_BTNCLICK && Param1 == ID_WorkModeBB)
+  else if (Msg == DN_BTNCLICK && (Param1 == ID_WorkModeBB-1 || Param1 == ID_WorkModeBB))
     PsInfo.SendDlgMessage(hDlg, DM_ENABLE, ID_ShowLinksAsDir, Param2);
 
   return PsInfo.DefDlgProc(hDlg, Msg, Param1, Param2);
@@ -174,11 +174,8 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
   const int ModeIDs[] = {MConfSafeMode, MConfNative, MConfBusybox};
   Builder.AddRadioButtons(&Opt.WorkMode, _ARRAYSIZE(ModeIDs), ModeIDs, true);
   ID_WorkModeBB = Builder.GetLastID();
-  FarDialogItem *item = Builder.AddCheckbox(MConfShowLinksAsDirs, &Opt.ShowLinksAsDir);
+  Builder.AddCheckbox(MConfShowLinksAsDirs, &Opt.ShowLinksAsDir)->Flags |= Opt.WorkMode == WORKMODE_SAFE ? DIF_DISABLE : 0;
   ID_ShowLinksAsDir = Builder.GetLastID();
-  if (Opt.WorkMode != _ARRAYSIZE(ModeIDs)-1)
-    item->Flags |= DIF_DISABLE;
-  Builder.AddTextBefore(item, L"   ");
   Builder.AddSeparator();
   Builder.AddCheckbox(MConfUseSU, &Opt.UseSU);
   Builder.AddTextBefore(Builder.AddCheckbox(MConfCopySD, &Opt.CopySD), L"   ");

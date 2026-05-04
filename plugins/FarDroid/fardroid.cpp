@@ -494,7 +494,7 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
       L"%sls -la%s%s%s \"%s/\"",
       Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"",
       Opt.UseLS_N ? L"N" : L"",
-      Opt.WorkMode == WORKMODE_BUSYBOX && Opt.ShowLinksAsDir ? L"L" : L"",
+      Opt.ShowLinksAsDir ? L"L" : L"",
       Opt.UseNoColor ? L" --color=never" : L"",
       sDir
     );
