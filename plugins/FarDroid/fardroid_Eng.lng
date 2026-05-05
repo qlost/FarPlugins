@@ -19,7 +19,7 @@
 "Use &Safe Mode"
 "Use &Native Mode"
 "Use &Busybox"
-"Show links as &dirs"
+"&Follow symlinks"
 "Work with S&uperuser permissions"
 "&Copy to /sdcard before operations"
 "WARNING: Slow down up to 2x times!"

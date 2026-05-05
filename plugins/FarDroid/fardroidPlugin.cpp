@@ -71,8 +71,8 @@ void WINAPI SetStartupInfoW(const struct PluginStartupInfo* Info)
       //                              1 fs   2 blks       3 used       4 avail      use%          5 mount
       hRegexpPart2 = RegexpMake(LR"(/^(\S+) +([\d.]+\S*) +([\d.]+\S*) +([\d.]+\S*) +(?:[\d.]+% +)?(\S+)/)");
     if (!hRegexpFile)
-      //                             1 privs                2 own  3 grp  4 size                5 year  6 mon   7 day    8 hour  9 min   10 mon   11 day 12 year 13 mon   14 day 15 hh   16 min   17 file  18  19 link
-      hRegexpFile = RegexpMake(LR"(/^([\w-]{10}) +(?:\d+ +)?(\w+) +(\w+) +(\d+(?:, *\d+)?)? +(?:(\d{4})-(\d{2})-(\d{2}) +(\d{2}):(\d{2})|(\w{3}) +(\d+) +(\d{4})|(\w{3}) +(\d+) +(\d{2}):(\d{2})) (.+?)(?: (-> (.+)))?$/)");
+      //                             1 privs                    2 own     3 grp     4 size                   5 year  6 mon   7 day    8 hour  9 min   10 mon   11 day 12 year 13 mon   14 day 15 hh   16 min      17 file  18  19 link
+      hRegexpFile = RegexpMake(LR"(/^([\w-?]{10}) +(?:\d+|\?)? *(\w+|\?) +(\w+|\?) +(\d+(?:, *\d+)?|\?)? +(?:(\d{4})-(\d{2})-(\d{2}) +(\d{2}):(\d{2})|(\w{3}) +(\d+) +(\d{4})|(\w{3}) +(\d+) +(\d{2}):(\d{2})|\?) (.+?)(?: (-> (.+)))?$/)");
   }
 }
 
