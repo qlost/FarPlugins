@@ -738,13 +738,14 @@ void fardroid::DeviceNameDialog()
   DeviceNameDialog(currentDevice);
 }
 
-bool fardroid::CheckLSOption(const wchar_t *s_cmd, bool &hasEsc)
+bool fardroid::CheckLSOption(const wchar_t *s_cmd, string &sRes)
 {FUNCTION
   Socket sock(this);
   bool option = false;
-  string sRes, cmd;
+  string cmd;
   cmd = (Opt.WorkMode == WORKMODE_BUSYBOX) ? L"busybox " : L"";
   cmd += s_cmd;
+  sRes.Clear();
   if (sock && sock.ADBShellExecute(cmd, sRes)) {
     if (sRes.startsWith(L"total")) //хотя бы не ошибка?
       option = true;
@@ -757,15 +758,15 @@ bool fardroid::CheckLSOption(const wchar_t *s_cmd, bool &hasEsc)
       }
     }
   }
-  hasEsc = wcsstr(sRes.CPtr(), L"\x1b[") != NULL;
   return option;
 }
 
 void fardroid::CheckCapabilities()
 {FUNCTION
+  string sRes;
   if (Opt.WorkMode == WORKMODE_SAFE) {
     Socket sock(this);
-    string sRes, cmd = L"sync:";
+    string cmd = L"sync:";
     if (sock.SendADBCommand(cmd)) {
       syncmsg msg;
       msg.req.id = ID_LIS2;
@@ -785,9 +786,12 @@ void fardroid::CheckCapabilities()
     }
   }
   else {
-    bool hasEsc;
-    Opt.UseLS_N = CheckLSOption(L"ls -Nla", hasEsc);
-    Opt.UseNoColor = hasEsc && CheckLSOption(L"ls -la --color=never", hasEsc);
+    Opt.UseLS_N = CheckLSOption(L"ls -Nla", sRes);
+    if (!Opt.UseLS_N)
+      CheckLSOption(L"ls -la", sRes);
+    // Если ls -la выводит с цветом, то нужно проверить доступность опции --color=never
+    Opt.UseNoColor = (wcsstr(sRes.CPtr(), L"\x1b[") != NULL) && CheckLSOption(L"ls -la --color=never", sRes);
+    // А если --color=never не работает или с ней всё равно остаётся расцветка, то придётся резать ESC-коды регэкспами
   }
 #ifdef USE_DEBUG
   string log;
