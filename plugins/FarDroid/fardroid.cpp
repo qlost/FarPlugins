@@ -1271,7 +1271,7 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
   if (!SelectedItemsNumber) //нет выделения и курсор стоит на ".."?
     return false;
 
-  PluginPanelItem *item = GetSelectedPanelItem(0);
+  PluginPanelItem *item = GetPanelItem(FCTL_GETSELECTEDPANELITEM);
   int owner_len = Max(lstrlenW(item->Owner), 32)+1,
       group_len = Max(lstrlenW((wchar_t*)item->UserData.Data), 32)+1;
   wchar_t *owner = new wchar_t[owner_len],
@@ -1370,7 +1370,7 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
     string sRes;
     PsInfo.PanelControl(PANEL_ACTIVE, FCTL_BEGINSELECTION, 0, NULL);
     for (unsigned i = 0; i < SelectedItemsNumber; i++) {
-      item = GetSelectedPanelItem(0);
+      item = GetPanelItem(FCTL_GETSELECTEDPANELITEM);
       if (item) {
         bool chk = ((!lstrcmp(owner, item->Owner) && !lstrcmp(group, (wchar_t*)item->UserData.Data)) || ADB_chown(item->FileName, owner, group, sRes)) &&
                    (prm == item->CRC32 || ADB_chmod(item->FileName, octal, sRes));

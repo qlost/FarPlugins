@@ -172,8 +172,7 @@ time_t          FileTimeToUnixTime(FILETIME ft);
 
 const wchar_t*    GetMsg(int MsgId);
 void              SetItemText(FarMenuItem *item, const string &text);
-PluginPanelItem*  GetSelectedPanelItem(unsigned i);
-PluginPanelItem*  GetCurrentPanelItem();
+PluginPanelItem*  GetPanelItem(enum FILE_CONTROL_COMMANDS Command);
 string            GetCurrentFileName();
 
 string  GetSysError(bool is_sock);

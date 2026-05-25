@@ -290,33 +290,14 @@ void SetItemText(FarMenuItem *item, const string &text)
   lstrcpy((wchar_t*)item->Text, text.CPtr());
 }
 
-PluginPanelItem* GetSelectedPanelItem(unsigned i)
+PluginPanelItem* GetPanelItem(enum FILE_CONTROL_COMMANDS Command)
 {
-  size_t size = PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETSELECTEDPANELITEM, i, nullptr);
-  if (size > 0) {
-    struct FarGetPluginPanelItem item{sizeof(FarGetPluginPanelItem), size, (PluginPanelItem*)malloc(size)};
-    if (item.Item) {
-      PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETSELECTEDPANELITEM, i, &item);
-      return item.Item;
-    }
-    else
-      return NULL;
-  }
-  else
-    return NULL;
-}
-
-PluginPanelItem* GetCurrentPanelItem()
-{
-  size_t size = PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETCURRENTPANELITEM, 0, nullptr);
-  if (size > 0) {
-    struct FarGetPluginPanelItem item{sizeof(FarGetPluginPanelItem), size, (PluginPanelItem*)malloc(size)};
-    if (item.Item) {
-      PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETCURRENTPANELITEM, 0, &item);
-      return item.Item;
-    }
-    else
-      return NULL;
+  size_t size = PsInfo.PanelControl(PANEL_ACTIVE, Command, 0, nullptr);
+  void *p;
+  if (size > 0 && (p = malloc(size))) {
+    struct FarGetPluginPanelItem item{sizeof(FarGetPluginPanelItem), size, (PluginPanelItem*)p};
+    PsInfo.PanelControl(PANEL_ACTIVE, Command, 0, &item);
+    return item.Item;
   }
   else
     return NULL;
@@ -324,7 +305,7 @@ PluginPanelItem* GetCurrentPanelItem()
 
 string GetCurrentFileName()
 {
-  PluginPanelItem *item = GetCurrentPanelItem();
+  PluginPanelItem *item = GetPanelItem(FCTL_GETCURRENTPANELITEM);
   string ret;
   if (item) {
     ret = item->FileName;
