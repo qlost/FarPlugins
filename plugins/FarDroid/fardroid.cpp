@@ -1479,7 +1479,7 @@ void fardroid::ShowProgressMessage()
 
     const wchar_t *msg[12]{procStruct.title, mFrom, sFrom.CPtr(), mTo, sTo.CPtr(), buf1, mTotal.CPtr(), sFiles.CPtr(), sBytes.CPtr()};
     unsigned index = 9;
-    if (procStruct.data[PT_ITEMS].total > 2) {//0й элемент - служебный, не учитывается
+    if (procStruct.data[PT_ITEMS].total > 1) {
       wchar_t buf2[PROGRESS_SIZE + 6];
       DrawProgress(buf2, Min(size-5, PROGRESS_SIZE), pt);
       msg[index++] = buf2;
@@ -1742,7 +1742,6 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   bool is_break = false;
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_INDETERMINATE, nullptr);
   copy_recs.Add(new CCopyRecord{0, (is_get ? currentPath.CPtr() : *Path), (is_get ? *Path : currentPath.CPtr()), 0, {}, {}, {}, true}); //корневой уровень с полными именами исходных каталогов
-  procStruct.data[PT_ITEMS].total++;
   for (size_t i = 0; i < ItemsNumber; i++) {
     if (CheckForEsc()) {
       is_break = true;
@@ -1795,7 +1794,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
     PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
 
     for (size_t i = 1; i < copy_recs.size(); i++) { //пропуск корневого элемента
-      procStruct.data[PT_ITEMS].current = i;
+      procStruct.data[PT_ITEMS].current = i - 1;
       if (CheckForEsc()) {
         is_break = true;
         break;
