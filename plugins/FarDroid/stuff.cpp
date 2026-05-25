@@ -293,11 +293,14 @@ void SetItemText(FarMenuItem *item, const string &text)
 PluginPanelItem* GetSelectedPanelItem(unsigned i)
 {
   size_t size = PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETSELECTEDPANELITEM, i, nullptr);
-  if (size > 0)
-  {
+  if (size > 0) {
     struct FarGetPluginPanelItem item{sizeof(FarGetPluginPanelItem), size, (PluginPanelItem*)malloc(size)};
-    PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETSELECTEDPANELITEM, i, &item);
-    return item.Item;
+    if (item.Item) {
+      PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETSELECTEDPANELITEM, i, &item);
+      return item.Item;
+    }
+    else
+      return NULL;
   }
   else
     return NULL;
@@ -306,11 +309,14 @@ PluginPanelItem* GetSelectedPanelItem(unsigned i)
 PluginPanelItem* GetCurrentPanelItem()
 {
   size_t size = PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETCURRENTPANELITEM, 0, nullptr);
-  if (size > 0)
-  {
+  if (size > 0) {
     struct FarGetPluginPanelItem item{sizeof(FarGetPluginPanelItem), size, (PluginPanelItem*)malloc(size)};
-    PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETCURRENTPANELITEM, 0, &item);
-    return item.Item;
+    if (item.Item) {
+      PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETCURRENTPANELITEM, 0, &item);
+      return item.Item;
+    }
+    else
+      return NULL;
   }
   else
     return NULL;
@@ -356,11 +362,13 @@ void DebugLog(const wchar_t *str)
 
   len = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
   char *s = (char*)malloc(len);
-  WideCharToMultiByte(CP_UTF8, 0, str, -1, s, len, NULL, NULL);
-  WriteFile(f, s, len-1, &size, NULL);
-  WriteFile(f, "\n", 1, &size, NULL);
-  CloseHandle(f);
-  free(s);
+  if (s) {
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, s, len, NULL, NULL);
+    WriteFile(f, s, len-1, &size, NULL);
+    WriteFile(f, "\n", 1, &size, NULL);
+    CloseHandle(f);
+    free(s);
+  }
 }
 
 void DebugBuf(void *s, DWORD sz)

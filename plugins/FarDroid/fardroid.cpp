@@ -1131,6 +1131,8 @@ int fardroid::DeviceMenu(string &text)
     return TRUE;
   }
   FarMenuItem *items = (FarMenuItem*)calloc(size, sizeof(FarMenuItem));
+  if (!items)
+    return FALSE;
 
   p = (wchar_t*)text.CPtr();
   for (unsigned i = 0; i < size; i++)

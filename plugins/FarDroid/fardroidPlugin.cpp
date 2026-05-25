@@ -397,21 +397,23 @@ intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
   if (Info->Move) {
     intptr_t Size = PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, 0, nullptr);
     FarPanelDirectory *dirInfo = (FarPanelDirectory*)malloc(Size);
-    dirInfo->StructSize = sizeof(FarPanelDirectory);
-    PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, Size, dirInfo);
+    if (dirInfo) {
+      dirInfo->StructSize = sizeof(FarPanelDirectory);
+      PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, Size, dirInfo);
 
-    string path = dirInfo->Name;
-    for (size_t i = 0; i < Info->ItemsNumber; i++) {
-      string sName = ConcatPath(path, Info->PanelItem[i].FileName);
-      if (Info->PanelItem[i].FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-        sName += L'\0';
-        SHFILEOPSTRUCT file_op{NULL, FO_DELETE, sName.CPtr(), NULL, FOF_NO_UI, false, 0, NULL};
-        SHFileOperation(&file_op);
+      string path = dirInfo->Name;
+      for (size_t i = 0; i < Info->ItemsNumber; i++) {
+        string sName = ConcatPath(path, Info->PanelItem[i].FileName);
+        if (Info->PanelItem[i].FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+          sName += L'\0';
+          SHFILEOPSTRUCT file_op{NULL, FO_DELETE, sName.CPtr(), NULL, FOF_NO_UI, false, 0, NULL};
+          SHFileOperation(&file_op);
+        }
+        else
+          DeleteFile(sName.CPtr());
       }
-      else
-        DeleteFile(sName.CPtr());
+      free(dirInfo);
     }
-    free(dirInfo);
   }
   return 2;
 }
