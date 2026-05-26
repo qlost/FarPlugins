@@ -267,6 +267,7 @@ bool Socket::ADBPullFile(string &sSrc, const wchar_t *sDst, string &sRes, const 
         if (!hFile) {
           hFile = CreateFile(sDst, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
           if (hFile == INVALID_HANDLE_VALUE) {
+            hFile = NULL;
             sRes = GetSysError(false);
             result = false;
             break;
@@ -1814,9 +1815,9 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         ShowProgressMessage();
 
         bool need_copy;
-        unsigned mode;
+        unsigned long mode;
         // Файл не существует?
-        if (is_get && GetFileAttributes(procStruct.to.CPtr()) == INVALID_FILE_ATTRIBUTES)
+        if (is_get && (mode = GetFileAttributes(procStruct.to.CPtr())) == INVALID_FILE_ATTRIBUTES)
           need_copy = true;
         else if (!is_get && !(mode = ADB_stat(procStruct.to))) {
           mode = 0664;
@@ -1836,6 +1837,8 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
 
         int result;
         if (need_copy) { //Yes
+          if (is_get && (mode & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)))
+            SetFileAttributes(procStruct.to.CPtr(), mode & (~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)));
           sd_name = L"/sdcard/";
           sd_name += copy_recs[i]->src;
           sd_name += L".fardroid";
