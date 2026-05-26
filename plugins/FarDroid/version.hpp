@@ -4,8 +4,10 @@
 #define PLUGIN_DESC L"FARDroid FAR Plugin"
 #define PLUGIN_NAME L"FARDroid"
 #define PLUGIN_FILENAME L"fardroid.dll"
-#define PLUGIN_AUTHOR L"dimfish 2016, Vladimir Kubyshev 2010"
-#define PLUGIN_MAJOR 2026
+#define PLUGIN_COPYRIGHT_INITIAL L"Vladimir Kubyshev 2010, dimfish 2016, "
+#define PLUGIN_COPYRIGHT_CURRENT L"Lost 2026"
+#define PLUGIN_AUTHOR PLUGIN_COPYRIGHT_INITIAL PLUGIN_COPYRIGHT_CURRENT
+#define PLUGIN_MAJOR 0
 #define PLUGIN_MINOR 0
 #define PLUGIN_REVISION 0
 #define PLUGIN_BUILD 0
