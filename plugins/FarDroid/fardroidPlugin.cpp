@@ -381,7 +381,7 @@ intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
   if (result <= 0)
     return result;
 
-  return !Info->Move || ((fardroid*)Info->hPanel)->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode | OPM_SILENT);
+  return Info->Move && ((fardroid*)Info->hPanel)->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode | OPM_SILENT);
 }
 
 intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
@@ -403,17 +403,19 @@ intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
 
       string path = dirInfo->Name;
       for (size_t i = 0; i < Info->ItemsNumber; i++) {
-        string sName = ConcatPath(path, Info->PanelItem[i].FileName);
-        if (Info->PanelItem[i].FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-          sName += L'\0';
-          SHFILEOPSTRUCT file_op{NULL, FO_DELETE, sName.CPtr(), NULL, FOF_NO_UI, false, 0, NULL};
-          SHFileOperation(&file_op);
+        if (!(Info->PanelItem[i].Flags & PPIF_SELECTED)) { //элемент успешно скопирован?
+          string sName = ConcatPath(path, Info->PanelItem[i].FileName);
+          if (Info->PanelItem[i].FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            sName += L'\0';
+            SHFILEOPSTRUCT file_op{NULL, FO_DELETE, sName.CPtr(), NULL, FOF_NO_UI, false, 0, NULL};
+            SHFileOperation(&file_op);
+          }
+          else
+            DeleteFile(sName.CPtr());
         }
-        else
-          DeleteFile(sName.CPtr());
       }
       free(dirInfo);
     }
   }
-  return 2;
+  return 0;
 }

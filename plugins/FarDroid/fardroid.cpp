@@ -1802,6 +1802,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         break;
       }
 
+      int result = TRUE;
       if (copy_recs[i]->is_dir)
         if (is_get)
           CreateDirectory(copy_recs[i]->dst.CPtr(), NULL);
@@ -1835,7 +1836,6 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
           need_copy = (exResult == 0) || (exResult == 2);
         }
 
-        int result;
         if (need_copy) { //Yes
           if (is_get && (mode & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)))
             SetFileAttributes(procStruct.to.CPtr(), mode & (~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)));
@@ -1878,18 +1878,19 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
           is_break = true;
           break;
         }
-        else {
-          if (copy_recs[i]->parent == 0) //элемент с панели (а не из вложенного каталога)?
-            PanelItem[CurPanelItemNumber++].Flags &= ~PPIF_SELECTED;
-          if (result == SKIP)
-            procStruct.data[PT_ALL].total -= copy_recs[i]->size;
-        }
+        else if (result == SKIP)
+          procStruct.data[PT_ALL].total -= copy_recs[i]->size;
       }//copy file
+      if (copy_recs[i]->parent == 0) { //элемент с панели (а не из вложенного каталога)?
+        if (result == TRUE)
+          PanelItem[CurPanelItemNumber].Flags &= ~PPIF_SELECTED;
+        CurPanelItemNumber++;
+      }
     }//for
     PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
   }
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
   SetConsoleTitle(szConsoleTitle);
   copy_recs.RemoveAll();
-  return is_break ? -1 : 1;
+  return is_break ? ABORT : TRUE;
 }
