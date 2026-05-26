@@ -1793,6 +1793,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
     procStruct.nTotalStartTime = GetTickCount();
     PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
 
+    size_t CurPanelItemNumber = 0;
     for (size_t i = 1; i < copy_recs.size(); i++) { //пропуск корневого элемента
       procStruct.data[PT_ITEMS].current = i - 1;
       if (CheckForEsc()) {
@@ -1876,7 +1877,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         }
         else {
           if (copy_recs[i]->parent == 0) //элемент с панели (а не из вложенного каталога)?
-            PanelItem[i-1].Flags &= ~PPIF_SELECTED;
+            PanelItem[CurPanelItemNumber++].Flags &= ~PPIF_SELECTED;
           if (result == SKIP)
             procStruct.data[PT_ALL].total -= copy_recs[i]->size;
         }
