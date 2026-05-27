@@ -381,7 +381,7 @@ intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
   if (result <= 0)
     return result;
 
-  return Info->Move && ((fardroid*)Info->hPanel)->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode | OPM_SILENT);
+  return Info->ItemsNumber == 1 || Info->Move && ((fardroid*)Info->hPanel)->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode | OPM_SILENT);
 }
 
 intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
