@@ -43,6 +43,7 @@ struct CCopyRecord
   FILETIME  mtime;
   FILETIME  atime;
   bool      is_dir;
+  bool      is_ok;
 };
 
 typedef SimpleVector<CPanelLine*> InfoPanelLines;
@@ -65,7 +66,7 @@ private:
 
   bool  ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs);
   bool  ADB_ls(const wchar_t *sDir, bool bSilent, CFileRecords &recs);
-  bool  ADB_rm(const wchar_t *sDir, string &sRes);
+  bool  ADB_rm(const wchar_t *sSrc, string &sRes);
   bool  ADB_chmod(const wchar_t *sSrc, const wchar_t *octal, string &sRes);
   bool  ADB_chown(const wchar_t *sSrc, const wchar_t *user, const wchar_t *group, string &sRes);
   bool  ADB_mount(const wchar_t *sFS, const wchar_t *sMode, string &sRes);
@@ -80,40 +81,40 @@ private:
   static string       GetDeviceCaption(wchar_t *device);
   static void WINAPI  FreeUserData(void *UserData, const struct FarPanelItemFreeInfo *Info);
 
-  bool          CheckForEsc();
-  void          DeviceNameDialog(const wchar_t *name);
-  bool          CheckLSOption(const wchar_t *s_cmd, string &sRes);
-  void          CheckCapabilities();
-  bool          GetDeviceInfo();
-  bool          GetMemoryInfo();
-  void          ParsePartitionInfo(wchar_t *sLine);
-  void          GetPartitionsInfo();
-  int           DeviceMenu(string &text);
-  void          SetProgress(unsigned type);
-  void          DrawProgress(wchar_t *buf, unsigned size, unsigned type);
-  void          ShowProgressMessage();
-  bool          DeleteFileFrom(const wchar_t *src, bool bSilent);
-  bool          ADBScanDirectory(size_t parent);
-  int           CopyErrorDialog(const wchar_t *sTitle, string &sRes);
-  bool          ScanDirectory(size_t parent);
+  bool    CheckForEsc();
+  void    DeviceNameDialog(const wchar_t *name);
+  bool    CheckLSOption(const wchar_t *s_cmd, string &sRes);
+  void    CheckCapabilities();
+  bool    GetDeviceInfo();
+  bool    GetMemoryInfo();
+  void    ParsePartitionInfo(wchar_t *sLine);
+  void    GetPartitionsInfo();
+  int     DeviceMenu(string &text);
+  void    SetProgress(unsigned type);
+  void    DrawProgress(wchar_t *buf, unsigned size, unsigned type);
+  void    ShowProgressMessage();
+  bool    DeleteFileFrom(const wchar_t *src, bool bSilent);
+  bool    ADBScanDirectory(size_t parent);
+  bool    ScanDirectory(size_t parent);
+  int     CopyErrorDialog(const wchar_t *sTitle, string &sRes);
 public:
   fardroid();
   ~fardroid();
 
-  void                DeviceNameDialog();
-  bool                UpdateInfoLines();
-  void                ChangeDir(const wchar_t *sDir);
-  HANDLE              OpenFromMainMenu();
-  HANDLE              OpenFromCommandLine(const wchar_t *cmd);
-  void                PreparePanel(struct OpenPanelInfo *Info);
-  bool                GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
-  void                Remount(const wchar_t *Mode);
-  void                GetFramebuffer();
-  bool                ChangePermissionsDialog(size_t selected);
-  bool                DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERATION_MODES OpMode);
-  int                 CreateDir(const wchar_t **DestPath, OPERATION_MODES OpMode);
-  bool                Copy_Rename(bool is_copy);
-  int                 CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **Path, bool is_move, OPERATION_MODES OpMode);
+  void    DeviceNameDialog();
+  bool    UpdateInfoLines();
+  void    ChangeDir(const wchar_t *sDir);
+  HANDLE  OpenFromMainMenu();
+  HANDLE  OpenFromCommandLine(const wchar_t *cmd);
+  void    PreparePanel(struct OpenPanelInfo *Info);
+  bool    GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
+  void    Remount(const wchar_t *Mode);
+  void    GetFramebuffer();
+  bool    ChangePermissionsDialog(size_t selected);
+  bool    DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERATION_MODES OpMode);
+  int     CreateDir(const wchar_t **DestPath, OPERATION_MODES OpMode);
+  bool    Copy_Rename(bool is_copy);
+  int     CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **Path, bool is_move, OPERATION_MODES OpMode);
 };
 
 class Socket

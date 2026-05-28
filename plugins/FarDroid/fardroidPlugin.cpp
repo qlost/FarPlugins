@@ -381,7 +381,7 @@ intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
   if (result <= 0)
     return result;
 
-  return Info->ItemsNumber == 1 || Info->Move && ((fardroid*)Info->hPanel)->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode | OPM_SILENT);
+  return ((Info->OpMode & (OPM_VIEW | OPM_EDIT)) != 0);
 }
 
 intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
@@ -389,33 +389,9 @@ intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
   if (!Info->hPanel || Info->ItemsNumber == 1 && !lstrcmp(Info->PanelItem[0].FileName, L".."))
     return -1;
 
-  fardroid* android = (fardroid*)Info->hPanel;
   int result = ((fardroid*)Info->hPanel)->CopyFiles(false, Info->PanelItem, Info->ItemsNumber, (const wchar_t**)&Info->SrcPath, Info->Move, Info->OpMode);
   if (result <= 0)
     return result;
 
-  if (Info->Move) {
-    intptr_t Size = PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, 0, nullptr);
-    FarPanelDirectory *dirInfo = (FarPanelDirectory*)malloc(Size);
-    if (dirInfo) {
-      dirInfo->StructSize = sizeof(FarPanelDirectory);
-      PsInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELDIRECTORY, Size, dirInfo);
-
-      string path = dirInfo->Name;
-      for (size_t i = 0; i < Info->ItemsNumber; i++) {
-        if (!(Info->PanelItem[i].Flags & PPIF_SELECTED)) { //элемент успешно скопирован?
-          string sName = ConcatPath(path, Info->PanelItem[i].FileName);
-          if (Info->PanelItem[i].FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            sName += L'\0';
-            SHFILEOPSTRUCT file_op{NULL, FO_DELETE, sName.CPtr(), NULL, FOF_NO_UI, false, 0, NULL};
-            SHFileOperation(&file_op);
-          }
-          else
-            DeleteFile(sName.CPtr());
-        }
-      }
-      free(dirInfo);
-    }
-  }
   return 0;
 }
