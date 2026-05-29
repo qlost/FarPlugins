@@ -548,6 +548,8 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
             CFileRecord *rec = new CFileRecord;
             rec->filename.fromChar(buf, CP_UTF8);
             if (Opt.UseLIS2) {
+              rec->owner.Format(L"%u", msg.dnt2.uid);
+              rec->grp.Format(L"%u", msg.dnt2.gid);
               rec->mode = msg.dnt2.mode;
               rec->size = msg.dnt2.size;
               rec->ctime = UnixTimeToFileTime(msg.dnt2.ctime);
@@ -1309,8 +1311,15 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
     Builder.AddText(MPermType);
 
   Builder.ColumnBreak();
-  Builder.AddEditField(owner, owner_len, 40, L"fardroidPermissionOwner")->X1 = X1;
-  Builder.AddEditField(group, group_len, 40, L"fardroidPermissionGroup")->X1 = X1;
+  FarDialogItem *di = Builder.AddEditField(owner, owner_len, 40, L"fardroidPermissionOwner");
+  di->X1 = X1;
+  if (!*owner)
+    di->Flags |= DIF_DISABLE;
+  di = Builder.AddEditField(group, group_len, 40, L"fardroidPermissionGroup");
+  di->X1 = X1;
+  if (!*group)
+    di->Flags |= DIF_DISABLE;
+
   if ((Opt.WorkMode != WORKMODE_SAFE) && (item->FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
     Builder.AddReadonlyEditField(item->AlternateFileName, 40)->X1 = X1;
   else
@@ -1357,7 +1366,7 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
   Builder.AddCheckbox(L"Sticky", &perm[9])->X1 = X1;
   IDPRM_Max = IDPRM_Bit[9] = Builder.GetLastID();
 
-  FarDialogItem *di = Builder.AddFixEditField(octal, 5, 4, L"9999");
+  di = Builder.AddFixEditField(octal, 5, 4, L"9999");
   IDPRM_Octal = Builder.GetLastID();
   Builder.AddTextBefore(di, L"Octal  ");
   Builder.AddButtonAfter(Builder.AddButtonAfter(di, MPermNone), MPermAll);
