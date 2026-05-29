@@ -1421,13 +1421,16 @@ void fardroid::ShowProgressMessage()
     return;
   dwTicks = dwNewTicks;
 
+  size_t elapsed;
+  wchar_t sEla[9];
+  if (procStruct.pType <= PS_COPY) {
+    elapsed = (dwNewTicks - procStruct.nTotalStartTime) / 1000;
+    wsprintf(sEla, L"%02u:%02u:%02u", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
+  }
+
   if (procStruct.pType == PS_SCAN)
   {
     pt = PT_ITEMS;
-    size_t elapsed = (dwNewTicks - procStruct.nTotalStartTime) / 1000;
-    wchar_t sEla[9];
-    wsprintf(sEla, L"%02u:%02u:%02u", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
-
     wchar_t sFiles1[50], sBytes1[50];
     const wchar_t *mFiles = GetMsg(MFiles), *mBytes = GetMsg(MBytes);
     FSF.FormatFileSize(procStruct.data[PT_ITEMS].total, 50-lstrlen(mFiles), FFFS_COMMAS, sFiles1, _ARRAYSIZE(sFiles1));
@@ -1439,21 +1442,20 @@ void fardroid::ShowProgressMessage()
     const wchar_t *msg[]{procStruct.title, sFiles.CPtr(), sBytes.CPtr(), sEla};
     PsInfo.Message(&MainGuid, &MsgWaitGuid, FMSG_LEFTALIGN, nullptr, msg, _ARRAYSIZE(msg), 0);
   }
-  else if (procStruct.pType == PS_COPY || procStruct.pType == PS_MOVE)
+  else if (procStruct.pType == PS_COPY)
   {
     pt = PT_ALL;
     const wchar_t *mFrom = GetMsg(MFrom), *mTo = GetMsg(MTo);
     string mTotal = GetMsg(MTotal);
     mTotal.Insert(0, L'\x1');
 
-    size_t elapsed = (dwNewTicks - procStruct.nTotalStartTime) / 1000, remain = 0, speed = 0;
+    size_t remain = 0, speed = 0;
     if (elapsed > 0)
       speed = size_t(procStruct.data[PT_ALL].current/ elapsed);
     if (speed > 0)
       remain = size_t((procStruct.data[PT_ALL].total - procStruct.data[PT_ALL].current) / speed);
 
-    wchar_t sEla[9], sRem[9], sSpeed[13];
-    wsprintf(sEla, L"%02u:%02u:%02u", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
+    wchar_t sRem[9], sSpeed[13];
     wsprintf(sRem, L"%02u:%02u:%02u", remain / 3600, (remain % 3600) / 60, remain % 60);
     FSF.FormatFileSize(speed, 12, FFFS_FLOATSIZE|FFFS_MINSIZEINDEX, sSpeed, _ARRAYSIZE(sSpeed));
     string sInfo;
@@ -1482,7 +1484,7 @@ void fardroid::ShowProgressMessage()
     unsigned index = 9;
     if (procStruct.data[PT_ITEMS].total > 1) {
       wchar_t buf2[PROGRESS_SIZE + 6];
-      DrawProgress(buf2, Min(size-5, PROGRESS_SIZE), pt);
+      DrawProgress(buf2, Min(size-5, PROGRESS_SIZE), PT_ALL);
       msg[index++] = buf2;
     }
     msg[index++] = L"\1";
@@ -1791,7 +1793,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
     string sd_name, sRes;
     const wchar_t *msg[]{GetMsg(MGetFile), GetMsg(MCopyWarnIfExists), NULL, GetMsg(MYes), GetMsg(MNo), GetMsg(MAlwaysYes), GetMsg(MAlwaysNo), GetMsg(MCancel)};
     intptr_t exResult = bSilent ? 2 : 0;
-    procStruct.pType = is_move ? PS_MOVE : PS_COPY;
+    procStruct.pType = PS_COPY;
     procStruct.title = GetMsg(is_move ? MMoveFile: MGetFile);
     procStruct.nTotalStartTime = GetTickCount();
     PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);

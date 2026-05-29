@@ -58,7 +58,7 @@
 #define S_ISRWX  (S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX)
 
 enum { WORKMODE_SAFE, WORKMODE_NATIVE, WORKMODE_BUSYBOX };
-const enum ProcessType { PS_SCAN, PS_COPY, PS_MOVE, PS_DELETE, PS_FB };
+const enum ProcessType { PS_SCAN, PS_COPY, PS_DELETE, PS_FB };
 const enum ProgressType { PT_ITEMS, PT_ONE, PT_ALL };
 
 struct Options {
