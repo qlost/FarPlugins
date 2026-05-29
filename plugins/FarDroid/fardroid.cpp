@@ -1720,9 +1720,11 @@ int fardroid::CopyErrorDialog(const wchar_t *sTitle, string &sRes)
 
 int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNumber, const wchar_t **Path, bool is_move, OPERATION_MODES OpMode)
 {FUNCTION
-  bool bSilent = (OpMode & (OPM_SILENT|OPM_FIND)) != 0;
+  if (ItemsNumber == 1 && !lstrcmp(PanelItem[0].FileName, L".."))
+    return ABORT;
 
-  if (is_get && (OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) == 0) {
+  bool bSilent = (OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) != 0;
+  if (is_get && !bSilent) {
     wchar_t editbuf[100];
     if (!PsInfo.InputBox(&MainGuid, nullptr, GetMsg(is_move ? MMoveFile: MGetFile), GetMsg(MCopyDest), nullptr, *Path, editbuf, _ARRAYSIZE(editbuf), L"CopyDialog", FIB_NONE))
       return ABORT;
@@ -1903,7 +1905,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
     }//for
 
     if (result != ABORT) {
-      result = TRUE;
+      result = ((OpMode & (OPM_VIEW | OPM_EDIT)) != 0);
       if (PanelItemResult) // можно снять выделение с последнего элемента панели?
         PanelItem[PanelItemNumber].Flags &= ~PPIF_SELECTED;
 
