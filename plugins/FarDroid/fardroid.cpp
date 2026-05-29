@@ -1782,9 +1782,8 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   #ifdef USE_DEBUG
   string log;
   for (size_t i = 0; i < copy_recs.size(); i++) {
-    log.Format(L"%u|%s|%s|%llu|%u\n", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
-    char *s = log.toUTF8();
-    DEBUGBUF(s, (DWORD)log.UTFLen());
+    log.Format(L"%u|%s|%s|%llu|%u", copy_recs[i]->parent, copy_recs[i]->src.CPtr(), copy_recs[i]->dst.CPtr(), copy_recs[i]->size, copy_recs[i]->is_dir);
+    DEBUGLOG2(log.CPtr());
   }
   #endif
 

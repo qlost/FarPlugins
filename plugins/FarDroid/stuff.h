@@ -177,35 +177,34 @@ string            GetCurrentFileName();
 
 string  GetSysError(bool is_sock);
 void    DeleteLog();
-void    DebugLog(const wchar_t *str);
-void    DebugBuf(void *s, DWORD size = 0);
+void    DebugLog(void *str, DWORD size, bool need_time, bool need_convert);
 
 class CDbgPrint
 {
   char *fl, *fn;
 public:
   CDbgPrint(char *file, char *func) {
-    wchar_t log[1024];
-    wsprintfW(log, L"  ->%hs/%hs", fl=file, fn=func);
-    DebugLog(log);
+    char log[1024];
+    DebugLog(log, wsprintfA(log, "  ->%s/%s\n", fl=file, fn=func), true, false);
   }
   ~CDbgPrint() {
-    wchar_t log[1024];
-    wsprintfW(log, L"<-  %hs/%hs", fl, fn);
-    DebugLog(log);
+    char log[1024];
+    DebugLog(log, wsprintfA(log, "<-  %s/%s\n", fl, fn), true, false);
   }
 };
 #define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #ifdef USE_DEBUG
 #define FUNCTION CDbgPrint __function((char*)__FILENAME__,(char*)__FUNCTION__);//__FUNCSIG__
 #define DELETELOG() DeleteLog()
-#define DEBUGLOG(str) DebugLog(str)
-#define DEBUGBUF(s, size) DebugBuf(s, size)
-#define DEBUGNL() DebugBuf((void*)"\n")
+#define DEBUGLOG(str) DebugLog((void*)str, 0, true, true)
+#define DEBUGLOG2(str) DebugLog((void*)str, 0, false, true)
+#define DEBUGBUF(s, size) DebugLog(s, size, false, false)
+#define DEBUGNL() DebugLog((void*)"\n", 1, false, false)
 #else
 #define FUNCTION
 #define DELETELOG()
 #define DEBUGLOG(str)
+#define DEBUGLOG2(str)
 #define DEBUGBUF(s, size)
 #define DEBUGNL()
 #endif

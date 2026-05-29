@@ -329,34 +329,33 @@ void DeleteLog()
   DeleteFileA(g_log_file_name);
 }
 
-void DebugLog(const wchar_t *str)
+void DebugLog(void *str, DWORD sz, bool need_time, bool need_convert)
 {
   DWORD size;
+  int len;
   HANDLE f = CreateFileA(g_log_file_name, GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   SetFilePointer(f, 0, NULL, FILE_END);
 
-  SYSTEMTIME st;
-  char stime[25];
-  GetLocalTime(&st);
-  int len = wsprintfA(stime, "%04d-%02d-%02d %02d:%02d:%02d.%03d\t", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-  WriteFile(f, stime, len, &size, NULL);
-
-  len = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
-  char *s = (char*)malloc(len);
-  if (s) {
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, s, len, NULL, NULL);
-    WriteFile(f, s, len-1, &size, NULL);
-    WriteFile(f, "\n", 1, &size, NULL);
-    CloseHandle(f);
-    free(s);
+  if (need_time) {
+    SYSTEMTIME st;
+    char stime[25];
+    GetLocalTime(&st);
+    len = wsprintfA(stime, "%04d-%02d-%02d %02d:%02d:%02d.%03d\t", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+    WriteFile(f, stime, len, &size, NULL);
   }
-}
 
-void DebugBuf(void *s, DWORD sz)
-{
-  DWORD size;
-  HANDLE f = CreateFileA(g_log_file_name, GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-  SetFilePointer(f, 0, NULL, FILE_END);
-  WriteFile(f, s, sz ? sz : lstrlenA((char*)s), &size, NULL);
+  if (need_convert) {
+    len = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)str, -1, NULL, 0, NULL, NULL);
+    char *s = (char*)malloc(len);
+    if (s) {
+      WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)str, -1, s, len, NULL, NULL);
+      WriteFile(f, s, len-1, &size, NULL);
+      WriteFile(f, "\n", 1, &size, NULL);
+      free(s);
+    }
+  }
+  else
+    WriteFile(f, str, sz ? sz : lstrlenA((char*)str), &size, NULL);
+
   CloseHandle(f);
 }
