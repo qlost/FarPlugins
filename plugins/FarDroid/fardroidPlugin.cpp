@@ -374,24 +374,24 @@ intptr_t WINAPI MakeDirectoryW(struct MakeDirectoryInfo* Info)
 
 intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
 {FUNCTION
-  if (!Info->hPanel || Info->ItemsNumber == 1 && !lstrcmp(Info->PanelItem[0].FileName, L".."))
+  if (
+    !Info->hPanel ||
+    Info->ItemsNumber == 1 && !lstrcmp(Info->PanelItem[0].FileName, L"..") ||
+    ((fardroid*)Info->hPanel)->CopyFiles(true, Info->PanelItem, Info->ItemsNumber, &Info->DestPath, Info->Move, Info->OpMode) < 0
+  )
     return -1;
-
-  int result = ((fardroid*)Info->hPanel)->CopyFiles(true, Info->PanelItem, Info->ItemsNumber, &Info->DestPath, Info->Move, Info->OpMode);
-  if (result <= 0)
-    return result;
-
-  return ((Info->OpMode & (OPM_VIEW | OPM_EDIT)) != 0);
+  else
+    return ((Info->OpMode & (OPM_VIEW | OPM_EDIT)) != 0);
 }
 
 intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
 {FUNCTION
-  if (!Info->hPanel || Info->ItemsNumber == 1 && !lstrcmp(Info->PanelItem[0].FileName, L".."))
+  if (
+    !Info->hPanel ||
+    Info->ItemsNumber == 1 && !lstrcmp(Info->PanelItem[0].FileName, L"..") ||
+    ((fardroid*)Info->hPanel)->CopyFiles(false, Info->PanelItem, Info->ItemsNumber, (const wchar_t**)&Info->SrcPath, Info->Move, Info->OpMode) < 0
+  )
     return -1;
-
-  int result = ((fardroid*)Info->hPanel)->CopyFiles(false, Info->PanelItem, Info->ItemsNumber, (const wchar_t**)&Info->SrcPath, Info->Move, Info->OpMode);
-  if (result <= 0)
-    return result;
-
-  return 0;
+  else
+    return 0;
 }

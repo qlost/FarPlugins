@@ -1744,12 +1744,12 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   // Полное имя хранится только у каталогов
   // Файлы берут его по ссылке на родительский каталог
   CCopyRecord *rec;
-  bool is_break = false;
+  int result = TRUE;
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_INDETERMINATE, nullptr);
   copy_recs.Add(new CCopyRecord{0, (is_get ? currentPath.CPtr() : *Path), (is_get ? *Path : currentPath.CPtr()), 0, {}, {}, {}, true, false}); //корневой уровень с полными именами исходных каталогов
   for (size_t i = 0; i < ItemsNumber; i++) {
     if (CheckForEsc()) {
-      is_break = true;
+      result = ABORT;
       break;
     }
     ShowProgressMessage();
@@ -1771,7 +1771,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         is_get && !ADBScanDirectory(copy_recs.size()-1) ||
         !is_get && !ScanDirectory(copy_recs.size()-1)
       ) {
-        is_break = true;
+        result = ABORT;
         break;
       }
     }
@@ -1789,7 +1789,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   }
   #endif
 
-  if (!is_break) {
+  if (result != ABORT) {
     string sd_name, sRes;
     const wchar_t *msg[]{GetMsg(MGetFile), GetMsg(MCopyWarnIfExists), NULL, GetMsg(MYes), GetMsg(MNo), GetMsg(MAlwaysYes), GetMsg(MAlwaysNo), GetMsg(MCancel)};
     intptr_t exResult = bSilent ? 2 : 0;
@@ -1803,7 +1803,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
     for (size_t i = 1; i < copy_recs.size(); i++) { //пропуск корневого элемента
       procStruct.data[PT_ITEMS].current = i - 1;
       if (CheckForEsc()) {
-        is_break = true;
+        result = ABORT;
         break;
       }
 
@@ -1815,7 +1815,6 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         PanelItemResult = true;
       }
 
-      int result = TRUE;
       if (copy_recs[i]->is_dir)
         if (is_get)
           CreateDirectory(copy_recs[i]->dst.CPtr(), NULL);
@@ -1830,8 +1829,10 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
 
         unsigned long mode;
         // Файл не существует?
-        if (is_get && (mode = GetFileAttributes(procStruct.to.CPtr())) == INVALID_FILE_ATTRIBUTES)
+        if (is_get && (mode = GetFileAttributes(procStruct.to.CPtr())) == INVALID_FILE_ATTRIBUTES) {
+          mode = 0;
           result = TRUE;
+        }
         else if (!is_get && !(mode = ADB_stat(procStruct.to))) {
           mode = 0664;
           result = TRUE;
@@ -1841,7 +1842,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
             msg[2] = procStruct.to.CPtr();
             exResult = PsInfo.Message(&MainGuid, &MsgGuid, FMSG_WARNING, L"warnifexists", msg, _ARRAYSIZE(msg), 5);
             if (exResult < 0 || exResult > 3) {
-              is_break = true;
+              result = ABORT;
               break;
             }
           }
@@ -1893,17 +1894,16 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
 
         copy_recs[copy_recs[i]->parent]->is_ok &= (result == TRUE);
 
-        if (result == ABORT) {
-          is_break = true;
+        if (result == ABORT)
           break;
-        }
         else if (result == SKIP)
           procStruct.data[PT_ALL].total -= copy_recs[i]->size;
       }//copy file
       PanelItemResult &= (result == TRUE); //обновление результата копирования элемента с панели результатами его возможных вложенностей
     }//for
 
-    if (!is_break) {
+    if (result != ABORT) {
+      result = TRUE;
       if (PanelItemResult) // можно снять выделение с последнего элемента панели?
         PanelItem[PanelItemNumber].Flags &= ~PPIF_SELECTED;
 
@@ -1923,9 +1923,9 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
     }
 
     PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
-  }//!is_break
+  }//получение полного списка не было прервано
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
   SetConsoleTitle(szConsoleTitle);
   copy_recs.RemoveAll();
-  return is_break ? ABORT : TRUE;
+  return result;
 }
