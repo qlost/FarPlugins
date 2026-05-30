@@ -197,15 +197,13 @@ public:
 #ifdef USE_DEBUG
 #define FUNCTION CDbgPrint __function((char*)__FILENAME__,(char*)__FUNCTION__);//__FUNCSIG__
 #define DELETELOG() DeleteLog()
-#define DEBUGLOG(str) DebugLog((void*)str, 0, true, true)
-#define DEBUGLOG2(str) DebugLog((void*)str, 0, false, true)
+#define DEBUGLOG(str) DebugLog((void*)str, 0, false, true)
 #define DEBUGBUF(s, size) DebugLog(s, size, false, false)
 #define DEBUGNL() DebugLog((void*)"\n", 1, false, false)
 #else
 #define FUNCTION
 #define DELETELOG()
 #define DEBUGLOG(str)
-#define DEBUGLOG2(str)
 #define DEBUGBUF(s, size)
 #define DEBUGNL()
 #endif
