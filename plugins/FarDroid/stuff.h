@@ -104,7 +104,8 @@ typedef union {
     unsigned namelen;
   } dent;
   struct {
-    UINT64 id;
+    unsigned id;
+    unsigned gap;
     UINT64 unk0;
     UINT64 unk1;
     UINT64 mode;

@@ -13,7 +13,7 @@ HANDLE hRegexpSize = nullptr
 
 BOOL ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wchar_t *parameters, bool wait)
 {
-  SHELLEXECUTEINFO ShExecInfo = { 0 };
+  SHELLEXECUTEINFO ShExecInfo;
   ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
   ShExecInfo.fMask = SEE_MASK_DOENVSUBST | (wait ? SEE_MASK_NOCLOSEPROCESS : SEE_MASK_FLAG_NO_UI);
   ShExecInfo.hwnd = nullptr;
@@ -22,7 +22,6 @@ BOOL ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wchar
   ShExecInfo.lpParameters = parameters;
   ShExecInfo.lpDirectory = path;
   ShExecInfo.nShow = SW_HIDE;
-  ShExecInfo.hInstApp = nullptr;
 
   if (ShellExecuteEx(&ShExecInfo))
   {

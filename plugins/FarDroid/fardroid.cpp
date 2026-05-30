@@ -21,8 +21,8 @@ void Socket::CreateADBSocket()
     if (connect(sock, (sockaddr*)&dest_addr, sizeof(dest_addr)) == 0)
       return;
     closesocket(sock);
+    sock = 0;
   }
-  sock = 0;
 }
 
 void Socket::CloseADBSocket()
@@ -1299,6 +1299,7 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
 
   PluginDialogBuilder Builder(PsInfo, MainGuid, DialogGuid, MPermTitle, NULL, PermissionDlgProc);
   Builder.AddText(MPermChange)->Flags |= DIF_CENTERTEXT;
+  FSF.TruncStr((wchar_t*)item->FileName, 70);
   Builder.AddText(item->FileName)->Flags |= DIF_CENTERTEXT;
   Builder.AddSeparator();
 
