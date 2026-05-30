@@ -1881,7 +1881,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
           do {
             sRes.Clear();
             const wchar_t *spath = is_get ? procStruct.from.CPtr() : procStruct.to.CPtr();
-            if (Opt.SU && Opt.CopySD && !wcsstr(spath, L"/sdcard") && !wcsstr(spath, L"/emulated")) { //включено предварительное копирование на sd и источник/назначение не на sd-карте?
+            if (Opt.SU && Opt.CopySD && !wcsstr(spath, L"/sdcard/") && !wcsstr(spath, L"/emulated/")) { //включено предварительное копирование на sd и источник/назначение не на sd-карте?
               if (is_get) {
                 result = ADB_copy(procStruct.from.CPtr(), sd_name.CPtr(), sRes);
                 if (result)
@@ -1903,7 +1903,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
             if (result) {
               if (!is_get && sm.sta2.id != 0) {
                 wchar_t octal[5], user[33], group[33];
-                i2octal(sm.sta2.mode, octal, _ARRAYSIZE(octal)-1);
+                i2octal((uintptr_t)sm.sta2.mode, octal, _ARRAYSIZE(octal)-1);
                 ADB_chmod(procStruct.to.CPtr(), octal, sRes);
                 FSF.itoa(sm.sta2.uid, user, 10);
                 FSF.itoa(sm.sta2.gid, group, 10);
