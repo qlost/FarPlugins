@@ -16,6 +16,7 @@
 
 #define MKID(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define ID_STAT MKID('S','T','A','T')
+#define ID_STA2 MKID('S','T','A','2')
 #define ID_LIST MKID('L','I','S','T')
 #define ID_LIS2 MKID('L','I','S','2')
 #define ID_ULNK MKID('U','L','N','K')
@@ -79,6 +80,7 @@ struct Options {
   bool    CopySD;
   bool    RemountSystem;
   bool    UseLIS2; //доступна 2я версия получения списка файлов ?
+  bool    UseSTA2; //доступна 2я версия получения инфы о файле ?
   bool    UseLS_N; //доступно отключение экранирования символов ls -N ?
   bool    UseNoColor; //доступна опция ls --color=never ?
 };
@@ -96,6 +98,19 @@ typedef union {
     unsigned size;
     unsigned time;
   } stat;
+  struct {
+    unsigned id;
+    unsigned gap;
+    UINT64 unk0;
+    UINT64 unk1;
+    UINT64 mode;
+    unsigned uid;
+    unsigned gid;
+    UINT64 size;
+    UINT64 ctime;
+    UINT64 mtime;
+    UINT64 atime;
+  } sta2;
   struct {
     unsigned id;
     unsigned mode;
