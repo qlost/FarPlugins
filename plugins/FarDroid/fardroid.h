@@ -75,7 +75,7 @@ private:
   bool  ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes);
   bool  ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec);
   bool  ADB_push(const wchar_t *sSrc, string &sDst, string &sRes, unsigned mode);
-  bool  ADB_stat(string &sDst, syncmsg &msg);
+  bool  ADB_stat(string &sDst, unsigned long *mode, unsigned *uid, unsigned *gid);
 
   static string       GetDeviceAliasName(const wchar_t *device);
   static string       GetDeviceCaption(wchar_t *device);
