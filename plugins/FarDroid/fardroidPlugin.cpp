@@ -296,18 +296,14 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
     {
     case VK_F5:
     case VK_F6:
-    {
       if (android->Copy_Rename(Info->Rec.Event.KeyEvent.wVirtualKeyCode == VK_F5)) {
         PsInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
         PsInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
       }
       return TRUE;
-    }
     case VK_F7:
-    {
       android->DeviceNameDialog();
       return TRUE;
-    }
     }
   }
   else if (!dwCTRL && !dwSHIFT && dwALT && Info->Rec.Event.KeyEvent.wVirtualKeyCode == VK_F10)
@@ -332,7 +328,7 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
 
 intptr_t WINAPI ProcessPanelEventW(const struct ProcessPanelEventInfo* Info)
 {
-  if (Info->hPanel && Info->Event == FE_CHANGEVIEWMODE)
+  if (Info->hPanel && (Info->Event == FE_CHANGEVIEWMODE || Info->Event == FE_CHANGESORTPARAMS))
   {
     PanelInfo PInfo;
     PInfo.StructSize = sizeof(PanelInfo);

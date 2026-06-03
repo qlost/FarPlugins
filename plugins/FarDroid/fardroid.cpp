@@ -651,14 +651,14 @@ bool fardroid::ADB_push(const wchar_t *sSrc, string &sDst, string &sRes, unsigne
   return false;
 }
 
-bool fardroid::ADB_stat(string &sDst, unsigned long *mode, unsigned *uid, unsigned *gid)
+bool fardroid::ADB_stat(string &sSrc, unsigned long *mode, unsigned *uid, unsigned *gid)
 {FUNCTION
   Socket sock(this);
   string cmd = L"sync:";
-  char *buf = sDst.toUTF8();
+  char *buf = sSrc.toUTF8();
   syncmsg msg;
   msg.req.id = Opt.UseSTA2 ? ID_STA2 : ID_STAT;
-  msg.req.namelen = (unsigned)sDst.UTFLen();
+  msg.req.namelen = (unsigned)sSrc.UTFLen();
   bool result = false;
   *mode = 0;
   *gid = *uid = (unsigned)-1;
