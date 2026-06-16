@@ -75,7 +75,7 @@ private:
   bool  ADB_rename(const wchar_t *sSrc, const wchar_t *sDst, string &sRes);
   bool  ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes);
   bool  ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec);
-  bool  ADB_push(const wchar_t *sSrc, string &sDst, string &sRes, unsigned mode);
+  bool  ADB_push(const wchar_t *sSrc, string &sDst, string &sRes);
 
   static string       GetDeviceAliasName(const wchar_t *device);
   static string       GetDeviceCaption(wchar_t *device);
@@ -138,5 +138,5 @@ public:
   void  ADBSyncQuit();
   void  ReadError(unsigned id, unsigned len, string &sRes);
   bool  ADBPullFile(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec);
-  bool  ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes, unsigned mode);
+  bool  ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes);
 };

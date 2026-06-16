@@ -304,14 +304,14 @@ bool Socket::ADBPullFile(string &sSrc, const wchar_t *sDst, string &sRes, const 
   return result;
 }
 
-bool Socket::ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes, unsigned mode)
+bool Socket::ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes)
 {FUNCTION
   if (sDst.Len() > 1024)
     return false;
 
   bool result = true;
-  string sData;
-  sData.Format(L"%s,%u", sDst.CPtr(), mode);
+  string sData = sDst;
+  sData += L",33188";
   char *buf = sData.toUTF8();
   syncmsg msg;
   msg.req.id = ID_SEND;
@@ -644,12 +644,12 @@ bool fardroid::ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const C
   return false;
 }
 
-bool fardroid::ADB_push(const wchar_t *sSrc, string &sDst, string &sRes, unsigned mode)
+bool fardroid::ADB_push(const wchar_t *sSrc, string &sDst, string &sRes)
 {FUNCTION
   Socket sock(this);
   string cmd = L"sync:";
   if (sock.SendADBCommand(cmd)) {
-    bool res = sock.ADBPushFile(sSrc, sDst, sRes, mode);
+    bool res = sock.ADBPushFile(sSrc, sDst, sRes);
     sock.ADBSyncQuit();
     return res;
   }
@@ -1864,7 +1864,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
                 DeleteFileFrom(sd_name.CPtr(), true);
               }
               else {
-                result = ADB_push(procStruct.from.CPtr(), sd_name, sRes, 0644);
+                result = ADB_push(procStruct.from.CPtr(), sd_name, sRes);
                 if (result)
                   result = ADB_rename(sd_name.CPtr(), procStruct.to.CPtr(), sRes);
               }
@@ -1873,7 +1873,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
               if (is_get)
                 result = ADB_pull(procStruct.from, procStruct.to.CPtr(), sRes, copy_recs[i]);
               else
-                result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes, 0644);
+                result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes);
 
             if (result) {
               if (!is_get && recs.size() == 1) {
