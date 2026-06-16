@@ -65,7 +65,8 @@ private:
   InfoSize        infoSize;
 
   bool  ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs);
-  bool  ADB_ls(const wchar_t *sDir, bool bSilent, CFileRecords &recs);
+  bool  ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecords &recs);
+  bool  ADB_list(const wchar_t *sDir, bool bSilent, CFileRecords &recs);
   bool  ADB_rm(const wchar_t *sSrc, string &sRes);
   bool  ADB_chmod(const wchar_t *sSrc, const wchar_t *octal, string &sRes);
   bool  ADB_chown(const wchar_t *sSrc, const wchar_t *user, const wchar_t *group, string &sRes);
@@ -75,7 +76,6 @@ private:
   bool  ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes);
   bool  ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec);
   bool  ADB_push(const wchar_t *sSrc, string &sDst, string &sRes, unsigned mode);
-  bool  ADB_stat(string &sSrc, unsigned long *mode, unsigned *uid, unsigned *gid);
 
   static string       GetDeviceAliasName(const wchar_t *device);
   static string       GetDeviceCaption(wchar_t *device);

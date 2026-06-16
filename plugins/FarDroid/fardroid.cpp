@@ -483,27 +483,32 @@ bool fardroid::ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs)
   return true;
 }
 
-bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
+bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecords &recs)
+{FUNCTION
+  Socket sock(this);
+  string cmd, sRes;
+  cmd.Format(
+    L"%sls -la%s%s%s%s \"%s%s\"",
+    Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"",
+    Opt.UseLS_N ? L"N" : L"",
+    Opt.ShowLinksAsDir ? L"L" : L"",
+    is_one ? L"d" : L"",
+    Opt.UseNoColor ? L" --color=never" : L"",
+    sDir,
+    is_one ? L"" : L"/"
+  );
+  return sock.ADBShellExecute(cmd, sRes) && ReadFileList(sRes, bSilent, recs);
+}
+
+bool fardroid::ADB_list(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
 {FUNCTION
   bool ret = false;
-  Socket sock(this);
   recs.RemoveAll();
   if (Opt.WorkMode != WORKMODE_SAFE)
-  {
-    string cmd, sRes;
-    cmd.Format(
-      L"%sls -la%s%s%s \"%s/\"",
-      Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"",
-      Opt.UseLS_N ? L"N" : L"",
-      Opt.ShowLinksAsDir ? L"L" : L"",
-      Opt.UseNoColor ? L" --color=never" : L"",
-      sDir
-    );
-    if (sock.ADBShellExecute(cmd, sRes))
-      return ReadFileList(sRes, bSilent, recs);
-  }
+    ret = ADB_ls(sDir, bSilent, false, recs);
   else
   {
+    Socket sock(this);
     string cmd = L"sync:";
     if (sock.SendADBCommand(cmd))
     {
@@ -651,42 +656,6 @@ bool fardroid::ADB_push(const wchar_t *sSrc, string &sDst, string &sRes, unsigne
   return false;
 }
 
-bool fardroid::ADB_stat(string &sSrc, unsigned long *mode, unsigned *uid, unsigned *gid)
-{FUNCTION
-  Socket sock(this);
-  string cmd = L"sync:";
-  char *buf = sSrc.toUTF8();
-  syncmsg msg;
-  msg.req.id = Opt.UseSTA2 ? ID_STA2 : ID_STAT;
-  msg.req.namelen = (unsigned)sSrc.UTFLen();
-  bool result = false;
-  *mode = 0;
-  *gid = *uid = (unsigned)-1;
-  if (
-    sock.SendADBCommand(cmd) &&
-    sock.SendADBPacket(&msg.req, sizeof(msg.req)) &&
-    sock.SendADBPacket(buf, msg.req.namelen)
-  ) {
-    DEBUGNL();
-    if (Opt.UseSTA2) {
-      if (sock.ReadADBPacket(&msg.sta2, sizeof(msg.sta2)) > 0 && msg.sta2.id == ID_STA2) {
-        result = true;
-        *mode = (unsigned long)msg.sta2.mode;
-        *uid = msg.sta2.uid;
-        *gid = msg.sta2.gid;
-      }
-    }
-    else {
-      if (sock.ReadADBPacket(&msg.stat, sizeof(msg.stat)) > 0 && msg.stat.id == ID_STAT) {
-        result = true;
-        *mode = msg.stat.mode;
-      }
-    }
-  }
-  DEBUGNL();
-  return result;
-}
-
 // Interface
 
 string fardroid::GetDeviceAliasName(const wchar_t *device)
@@ -819,17 +788,9 @@ void fardroid::CheckCapabilities()
     sock.SendADBCommand(cmd);
   }
 
-  { //проверка наличия STA2
-    string s = L"/";
-    unsigned long mode;
-    unsigned uid, gid;
-    Opt.UseSTA2 = true;
-    Opt.UseSTA2 = ADB_stat(s, &mode, &uid, &gid);
-  }
-
 #ifdef USE_DEBUG
   string log;
-  log.Format(L"UseLIS2=%u  UseSTA2=%u  UseLS_N=%u  UseNoColor=%u", Opt.UseLIS2, Opt.UseSTA2, Opt.UseLS_N, Opt.UseNoColor);
+  log.Format(L"UseLIS2=%u  UseLS_N=%u  UseNoColor=%u", Opt.UseLIS2, Opt.UseLS_N, Opt.UseNoColor);
   DEBUGLOG(log.CPtr());
 #endif
 }
@@ -1110,7 +1071,7 @@ void fardroid::PreparePanel(OpenPanelInfo *Info)
 bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode)
 {
   CFileRecords recs;
-  if (ADB_ls(currentPath.CPtr(), false, recs)) {
+  if (ADB_list(currentPath.CPtr(), false, recs)) {
     *pItemsNumber = recs.size();
     if (*pItemsNumber > 0) {
       PluginPanelItem *NewPanelItem = (PluginPanelItem*)calloc(*pItemsNumber, sizeof(PluginPanelItem)); //+HEAP_ZERO_MEMORY
@@ -1653,7 +1614,7 @@ bool fardroid::Copy_Rename(bool is_copy)
 bool fardroid::ADBScanDirectory(size_t parent)
 {FUNCTION
   CFileRecords recs;
-  if (ADB_ls(copy_recs[parent]->src.CPtr(), true, recs)) {
+  if (ADB_list(copy_recs[parent]->src.CPtr(), true, recs)) {
     for (size_t i = 0; i < recs.size(); i++) {
       if (CheckForEsc())
         return false;
@@ -1827,6 +1788,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   }
   #endif
 
+  CFileRecords recs;
   if (result != ABORT) {
     string sd_name, sRes;
     const wchar_t *msg[]{GetMsg(MGetFile), GetMsg(MCopyWarnIfExists), NULL, GetMsg(MYes), GetMsg(MNo), GetMsg(MAlwaysYes), GetMsg(MAlwaysNo), GetMsg(MCancel)};
@@ -1865,14 +1827,13 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         procStruct.data[PT_ONE].total = copy_recs[i]->size;
         ShowProgressMessage();
 
-        unsigned long mode;
-        unsigned uid, gid;
+        unsigned long attr;
         // Файл не существует?
-        if (is_get && (mode = GetFileAttributes(procStruct.to.CPtr())) == INVALID_FILE_ATTRIBUTES) {
-          mode = 0;
+        if (is_get && (attr = GetFileAttributes(procStruct.to.CPtr())) == INVALID_FILE_ATTRIBUTES) {
+          attr = 0;
           result = TRUE;
         }
-        else if (!is_get && (!ADB_stat(procStruct.to, &mode, &uid, &gid) || mode == 0))
+        else if (!is_get && (!ADB_ls(procStruct.to.CPtr(), true, true, recs) || recs.size() == 0))
           result = TRUE;
         else { //Файл существует?
           if (exResult != 2 && exResult != 3) { //не тихий режим и ещё не выбраны "Всегда да" и "Всегда нет"?
@@ -1887,8 +1848,8 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
         }
 
         if (result == TRUE) {
-          if (is_get && (mode & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)))
-            SetFileAttributes(procStruct.to.CPtr(), mode & (~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)));
+          if (is_get && (attr & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)))
+            SetFileAttributes(procStruct.to.CPtr(), attr & (~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)));
           sd_name = L"/sdcard/";
           sd_name += copy_recs[i]->src;
           sd_name += L".fardroid";
@@ -1903,7 +1864,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
                 DeleteFileFrom(sd_name.CPtr(), true);
               }
               else {
-                result = ADB_push(procStruct.from.CPtr(), sd_name, sRes, mode ? mode : 0664);
+                result = ADB_push(procStruct.from.CPtr(), sd_name, sRes, 0644);
                 if (result)
                   result = ADB_rename(sd_name.CPtr(), procStruct.to.CPtr(), sRes);
               }
@@ -1912,18 +1873,15 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
               if (is_get)
                 result = ADB_pull(procStruct.from, procStruct.to.CPtr(), sRes, copy_recs[i]);
               else
-                result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes, mode ? mode : 0664);
+                result = ADB_push(procStruct.from.CPtr(), procStruct.to, sRes, 0644);
 
             if (result) {
-              if (!is_get && mode) {
-                wchar_t octal[5], user[12], group[12];
-                i2octal((uintptr_t)mode, octal, _ARRAYSIZE(octal)-1);
+              if (!is_get && recs.size() == 1) {
+                wchar_t octal[5];
+                i2octal((uintptr_t)recs[0]->mode, octal, _ARRAYSIZE(octal)-1);
                 ADB_chmod(procStruct.to.CPtr(), octal, sRes);
-                if (uid != (unsigned)-1) {
-                  FSF.itoa(uid, user, 10);
-                  FSF.itoa(gid, group, 10);
-                  ADB_chown(procStruct.to.CPtr(), user, group, sRes);
-                }
+                if (!recs[0]->owner.IsEmpty() && !recs[0]->grp.IsEmpty())
+                  ADB_chown(procStruct.to.CPtr(), recs[0]->owner.CPtr(), recs[0]->grp.CPtr(), sRes);
               }
             }
             else
