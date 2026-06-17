@@ -4,7 +4,7 @@
 #include <DlgBuilder.hpp>
 #include "framebuffer.h"
 
-int IDPRM_Octal, IDPRM_All, IDPRM_None, IDPRM_Min, IDPRM_Max, IDPRM_Bit[12];
+int IDPRM_Octal, IDPRM_All, IDPRM_None, IDPRM_Min, IDPRM_Max, IDPRM_Bit[3*4];
 uintptr_t prm;
 
 // Sockets
@@ -20,8 +20,7 @@ void Socket::CreateADBSocket()
     dest_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     if (connect(sock, (sockaddr*)&dest_addr, sizeof(dest_addr)) == 0)
       return;
-    closesocket(sock);
-    sock = 0;
+    CloseADBSocket();
   }
 }
 
@@ -83,10 +82,10 @@ bool Socket::SendADBCommand(string &cmd)
     return false;
   unsigned size = (unsigned)cmd.UTFLen();
   wsprintfA(buf, "%04X", size);
-  SendADBPacket(buf, 4);
+  SendADBPacket(buf, sizeof(buf)-1);
   SendADBPacket(s, size);
   DEBUGNL();
-  long msg;
+  UINT32 msg = 0;
   ReadADBPacket(&msg, sizeof(msg));
   DEBUGNL();
   return msg == ID_OKAY;
@@ -104,10 +103,10 @@ void Socket::PrepareADBSocket()
       if (SendADBCommand(cmd))
       {
         string devices;
-        unsigned tmp;
-        ReadADBPacket(&tmp, 4);
+        UINT32 msg = 0;
+        ReadADBPacket(&msg, sizeof(msg));
         DEBUGNL();
-        if (tmp == ID_0000) {
+        if (msg == ID_0000) {
           lastError = ERROR_DEV_NOT_EXIST;
           CloseADBSocket();
         }
@@ -115,11 +114,11 @@ void Socket::PrepareADBSocket()
           char buf[4097];
           while (true)
           {
-            int len = ReadADBPacket(buf, 4096);
+            int len = ReadADBPacket(buf, sizeof(buf)-1);
             if (len <= 0)
               break;
 
-            buf[len] = 0;
+            buf[len] = '\0';
             devices += string(buf, CP_UTF8);
           }
           CloseADBSocket();
@@ -181,7 +180,7 @@ void Socket::PrepareADBSocket()
 bool Socket::ADBShellExecute(string &cmd, string &sRes)
 {FUNCTION
   DEBUGLOG(cmd.CPtr());
-  bool bOK = false;
+  bool result = false;
   if (Opt.SU && Opt.SU0)
     cmd.Format(L"shell:su 0 %s", EscapeCommand(cmd).CPtr());
   else if (Opt.SU)
@@ -194,19 +193,19 @@ bool Socket::ADBShellExecute(string &cmd, string &sRes)
     char buf[4097];
     while (true)
     {
-      int len = ReadADBPacket(buf, _ARRAYSIZE(buf)-1);
+      int len = ReadADBPacket(buf, sizeof(buf)-1);
       if (len <= 0)
         break;
 
-      buf[len] = 0;
+      buf[len] = '\0';
       sRes += string(buf, CP_UTF8);//TODO потенциальная проблема, если принятый пакет обрывается на середине многобайтового кода буквы
       //Нужно сохранять целиком в char*, а потом преобразовывать в wchar_t*
       //И где-то здесь же заменять A0 на C2,A0
     }
     sRes.Replace(L"\\ ", L" ").Replace(L"\\\\", L"\\").Replace(L"\r", L"");
-    bOK = true;
+    result = true;
   }
-  return bOK;
+  return result;
 }
 
 void Socket::ADBSyncQuit()
@@ -374,8 +373,9 @@ bool Socket::ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes)
   return result;
 }
 
-Socket::Socket(fardroid *a): sock(0)
+Socket::Socket(fardroid *a)
 {FUNCTION
+  sock = 0;
   android = a;
   PrepareADBSocket();
 }
@@ -408,7 +408,7 @@ fardroid::~fardroid()
   WSACleanup();
 }
 
-bool fardroid::ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs)
+bool fardroid::ReadFileList(string &sFileList, bool is_silent, CFileRecords &recs)
 {
   RegExpMatch *match;
   wchar_t *p = (wchar_t*)sFileList.CPtr(), *sLine;
@@ -420,8 +420,8 @@ bool fardroid::ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs)
     unsigned len = lstrlen(sLine);
     if (
       *sLine &&
-      wcsncmp(sLine, L"total", 5) &&
-      wcsncmp(sLine, L"ls:", 3) &&
+      StrCmpNW(sLine, L"total", 5) &&
+      StrCmpNW(sLine, L"ls:", 3) &&
       lstrcmp(sLine + len - 3, L" ..") &&
       lstrcmp(sLine + len - 2, L" .")
     ) {
@@ -483,7 +483,7 @@ bool fardroid::ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs)
   return true;
 }
 
-bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecords &recs)
+bool fardroid::ADB_ls(const wchar_t *sDir, bool is_silent, bool is_one, CFileRecords &recs)
 {FUNCTION
   Socket sock(this);
   string cmd, sRes;
@@ -498,7 +498,7 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecor
     is_one ? L"" : L"/"
   );
   recs.RemoveAll();
-  return sock.ADBShellExecute(cmd, sRes) && ReadFileList(sRes, bSilent, recs);
+  return sock.ADBShellExecute(cmd, sRes) && ReadFileList(sRes, is_silent, recs);
 }
 
 bool fardroid::ADB_list(const wchar_t *sDir, CFileRecords &recs)
@@ -675,7 +675,7 @@ string fardroid::GetDeviceCaption(wchar_t *device)
 
 void WINAPI fardroid::FreeUserData(void *UserData, const struct FarPanelItemFreeInfo *Info)
 {
-  free(UserData);
+  LocalFree(UserData);
 }
 
 bool fardroid::CheckForEsc()
@@ -774,7 +774,7 @@ void fardroid::CheckCapabilities()
     if (!Opt.UseLS_N)
       CheckLSOption(L"ls -la", sRes);
     // Если ls -la выводит с цветом, то нужно проверить доступность опции --color=never
-    Opt.UseNoColor = (wcsstr(sRes.CPtr(), L"\x1b[") != NULL) && CheckLSOption(L"ls -la --color=never", sRes);
+    Opt.UseNoColor = (StrStrW(sRes.CPtr(), L"\x1b[") != NULL) && CheckLSOption(L"ls -la --color=never", sRes);
     // А если --color=never не работает или с ней всё равно остаётся расцветка, то придётся резать ESC-коды регэкспами
   }
 
@@ -804,13 +804,13 @@ bool fardroid::GetDeviceInfo()
       if (!sLine)
         break;
       p = NULL;
-      if (!wcsncmp(sLine, L"[ro.product.manufacturer]", 25))
+      if (!StrCmpNW(sLine, L"[ro.product.manufacturer]", 25))
         pl->text.Insert(0, sLine+28, lstrlen(sLine+28)-1);
-      else if (!wcsncmp(sLine, L"[ro.product.model]", 18)) {
+      else if (!StrCmpNW(sLine, L"[ro.product.model]", 18)) {
         pl->text += L' ';
         pl->text.Append(sLine+21, lstrlen(sLine+21)-1);
       }
-      else if (!wcsncmp(sLine, L"[ro.build.version.release]", 26))
+      else if (!StrCmpNW(sLine, L"[ro.build.version.release]", 26))
         pl->data.Copy(sLine+29, lstrlen(sLine+29)-1);
     }
     lines.Add(pl);
@@ -861,7 +861,7 @@ void fardroid::ParsePartitionInfo(wchar_t *sLine)
   wchar_t *path;
   unsigned long long total = 0, free = 0, used = 0;
 
-  if (RegExTokenize(sLine, hRegexpPart1, &match, true) && (match[1].start >= 0) && !wcschr(sLine + match[1].start, L'@')) {
+  if (RegExTokenize(sLine, hRegexpPart1, &match, true) && (match[1].start >= 0) && !StrChrW(sLine + match[1].start, L'@')) {
     path = sLine + match[1].start;
     total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0;
     free = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) : 0;
@@ -870,7 +870,7 @@ void fardroid::ParsePartitionInfo(wchar_t *sLine)
   else if (RegExTokenize(sLine, hRegexpPart2, &match, true)) {
     if ((match[5].start >= 0) && (sLine[match[5].start] == L'/'))
     {
-      if (!wcschr(sLine + match[5].start, L'@')) {
+      if (!StrChrW(sLine + match[5].start, L'@')) {
         path = sLine + match[5].start;
         total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) * 1024ULL : 0;
         used = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) * 1024ULL : 0;
@@ -879,7 +879,7 @@ void fardroid::ParsePartitionInfo(wchar_t *sLine)
       else
         path = NULL;
     }
-    else if ((match[1].start >= 0) && !wcschr(sLine + match[1].start, L'@'))
+    else if ((match[1].start >= 0) && !StrChrW(sLine + match[1].start, L'@'))
     {
       path = sLine + match[1].start;
       total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0;
@@ -907,7 +907,7 @@ void fardroid::ParsePartitionInfo(wchar_t *sLine)
     lines.Add(pl);
 
     infoSize.Add(new CInfoSize{path, total, used, free});
-    if (wcsstr(path, L"emulated")) {
+    if (StrStrW(path, L"emulated")) {
       infoSize.Add(new CInfoSize{L"/sdcard", total, used, free});
       infoSize.Add(new CInfoSize{L"/mnt/sdcard", total, used, free});
       //TODO добавить /storage, но проверить как это работает с физической sdcard
@@ -992,7 +992,7 @@ void fardroid::ChangeDir(const wchar_t *sDir)
   else if (sDir[0] == L'/') //полный путь
     currentPath = sDir;
   else if (sDir[0] == L'.' && sDir[1] == L'.' && sDir[2] == L'\0') { //..
-    const wchar_t *p = wcsrchr(currentPath.CPtr(), L'/');
+    const wchar_t *p = StrRChrW(currentPath.CPtr(), NULL, L'/');
     currentPath.SetLen((p == currentPath.CPtr()) ? 1 : p - currentPath.CPtr());
   }
   else
@@ -1064,9 +1064,9 @@ void fardroid::PreparePanel(OpenPanelInfo *Info)
     Info->Flags |= OPIF_ADDDOTS;
 }
 
-bool fardroid::GetFiles(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
+bool fardroid::GetFiles(const wchar_t *sDir, bool is_silent, CFileRecords &recs)
 {
-  return (Opt.WorkMode == WORKMODE_SAFE) ? ADB_list(sDir, recs) : ADB_ls(sDir, bSilent, false, recs);
+  return (Opt.WorkMode == WORKMODE_SAFE) ? ADB_list(sDir, recs) : ADB_ls(sDir, is_silent, false, recs);
 }
 
 bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode)
@@ -1082,13 +1082,13 @@ bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNu
 
       for (size_t i = 0; i < *pItemsNumber; i++) {
         if (!recs[i]->filename.IsEmpty())
-          NewPanelItem[i].FileName = wcsdup(recs[i]->filename.CPtr());
+          NewPanelItem[i].FileName = StrDupW(recs[i]->filename.CPtr());
         if (!recs[i]->owner.IsEmpty())
-          NewPanelItem[i].Owner = wcsdup(recs[i]->owner.CPtr());
+          NewPanelItem[i].Owner = StrDupW(recs[i]->owner.CPtr());
         if (!recs[i]->desc.IsEmpty())
-          NewPanelItem[i].Description = wcsdup(recs[i]->desc.CPtr());
+          NewPanelItem[i].Description = StrDupW(recs[i]->desc.CPtr());
         if (!recs[i]->linkto.IsEmpty())
-          NewPanelItem[i].AlternateFileName = wcsdup(recs[i]->linkto.CPtr());
+          NewPanelItem[i].AlternateFileName = StrDupW(recs[i]->linkto.CPtr());
         NewPanelItem[i].FileSize = recs[i]->size;
         NewPanelItem[i].CreationTime = recs[i]->ctime;
         NewPanelItem[i].LastAccessTime = recs[i]->atime;
@@ -1096,7 +1096,7 @@ bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNu
         NewPanelItem[i].CRC32 = (uintptr_t)recs[i]->mode;
         NewPanelItem[i].FileAttributes = ModeToAttr(recs[i]->mode);
         if (!recs[i]->grp.IsEmpty()) {
-          NewPanelItem[i].UserData.Data = wcsdup(recs[i]->grp.CPtr());
+          NewPanelItem[i].UserData.Data = StrDupW(recs[i]->grp.CPtr());
           NewPanelItem[i].UserData.FreeData = FreeUserData;
         }
       }
@@ -1197,7 +1197,7 @@ void fardroid::GetFramebuffer()
     string cmd = L"framebuffer:";
     if (sock.SendADBCommand(cmd) && sock.ReadADBPacket(&fbinfo, sizeof(struct fbinfo)) > 0) {
       fb.bpp = fbinfo.bpp;
-      unsigned tmp;
+      UINT32 tmp;
       if ((fbinfo.version != 2 || sock.ReadADBPacket(&tmp, sizeof(tmp)) > 0) && sock.ReadADBPacket(&fb.size, sizeof(struct fb)-4) > 0) {
         fb.data = malloc(fb.size);
         if (fb.data) {
@@ -1205,7 +1205,7 @@ void fardroid::GetFramebuffer()
           GetConsoleTitle(szConsoleTitle, MAX_PATH);
           HANDLE hScreen = PsInfo.SaveScreen(0, 0, -1, -1);
           procStruct.pType = PS_FB;
-          procStruct.bSilent = false;
+          procStruct.is_silent = false;
           procStruct.title = GetMsg(MScreenshot);
           procStruct.data[PT_ALL].current = 0;
           procStruct.data[PT_ALL].total = fb.size;
@@ -1242,7 +1242,7 @@ intptr_t WINAPI PermissionDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, vo
   else if ((Msg == DN_EDITCHANGE && Param1 == IDPRM_Octal)) {
     prm = StringOctalToMode(((FarDialogItem*)Param2)->Data);
     PsInfo.SendDlgMessage(hDlg, DM_ENABLEREDRAW, FALSE, 0);
-    for (unsigned bit = 1, i = 0; bit <= 04000; bit <<= 1, i++) //расстановка галочек по checkbox-ам
+    for (unsigned bit = 1, i = 0; i < _ARRAYSIZE(IDPRM_Bit); bit <<= 1, i++) //расстановка галочек по checkbox-ам
       PsInfo.SendDlgMessage(hDlg, DM_SETCHECK, IDPRM_Bit[i], (void*)((prm & bit) != 0));
     PsInfo.SendDlgMessage(hDlg, DM_ENABLEREDRAW, TRUE, 0);
     return true;
@@ -1287,7 +1287,7 @@ bool fardroid::ChangePermissionsDialog(size_t SelectedItemsNumber)
   i2octal(prm & S_ISRWX, octal, _ARRAYSIZE(octal)-1);
 
   bool perm[3*4];
-  for (unsigned bit = 1, i = 0; bit <= 04000; bit <<= 1, i++)
+  for (unsigned bit = 1, i = 0; i < _ARRAYSIZE(perm); bit <<= 1, i++)
     perm[i] = prm & bit;
 
   PluginDialogBuilder Builder(PsInfo, MainGuid, DialogGuid, MPermTitle, NULL, PermissionDlgProc);
@@ -1415,7 +1415,7 @@ void fardroid::ShowProgressMessage()
   ProgressType pt;
   static DWORD dwTicks = 0;
   DWORD dwNewTicks = GetTickCount();
-  if (procStruct.bSilent || dwNewTicks - dwTicks < 50)
+  if (procStruct.is_silent || dwNewTicks - dwTicks < 50)
     return;
   dwTicks = dwNewTicks;
 
@@ -1512,11 +1512,11 @@ void fardroid::ShowProgressMessage()
   SetProgress(pt);
 }
 
-bool fardroid::DeleteFileFrom(const wchar_t *src, bool bSilent)
+bool fardroid::DeleteFileFrom(const wchar_t *src, bool is_silent)
 {FUNCTION
   string sRes;
 deltry:
-  if (ADB_rm(src, sRes) || bSilent)
+  if (ADB_rm(src, sRes) || is_silent)
     return true;
 
   const wchar_t *msg[]{GetMsg(MDelFile), src, sRes.CPtr()};
@@ -1534,7 +1534,7 @@ deltry:
 
 bool fardroid::DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERATION_MODES OpMode)
 {FUNCTION
-  bool bSilent = (OpMode & (OPM_SILENT|OPM_FIND)) != 0;
+  bool is_silent = (OpMode & (OPM_SILENT|OPM_FIND)) != 0;
 
   if ((OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) == 0) {
     const wchar_t *msg[]{GetMsg(MDeleteTitle), GetMsg(MDeleteWarn)};
@@ -1545,7 +1545,7 @@ bool fardroid::DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERA
   wchar_t szConsoleTitle[MAX_PATH];
   GetConsoleTitle(szConsoleTitle, MAX_PATH);
   procStruct.pType = PS_DELETE;
-  procStruct.bSilent = false;
+  procStruct.is_silent = false;
   procStruct.title = GetMsg(MDelFile);
   procStruct.data[PT_ITEMS].total = ItemsNumber;
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
@@ -1554,7 +1554,7 @@ bool fardroid::DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERA
       break;
     procStruct.from = ConcatPath(currentPath, PanelItem[procStruct.data[PT_ITEMS].current].FileName);
     ShowProgressMessage();
-    if (!DeleteFileFrom(procStruct.from.CPtr(), bSilent))
+    if (!DeleteFileFrom(procStruct.from.CPtr(), is_silent))
       break;
   }
   PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
@@ -1721,8 +1721,8 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   if (ItemsNumber == 1 && !lstrcmp(PanelItem[0].FileName, L".."))
     return ABORT;
 
-  bool bSilent = (OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) != 0;
-  if (is_get && !bSilent) {
+  bool is_silent = (OpMode & (OPM_SILENT|OPM_FIND|OPM_QUICKVIEW|OPM_VIEW|OPM_EDIT)) != 0;
+  if (is_get && !is_silent) {
     wchar_t editbuf[100];
     if (!PsInfo.InputBox(&MainGuid, nullptr, GetMsg(is_move ? MMoveFile: MGetFile), GetMsg(MCopyDest), nullptr, *Path, editbuf, _ARRAYSIZE(editbuf), L"CopyDialog", FIB_NONE))
       return ABORT;
@@ -1733,7 +1733,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   wchar_t szConsoleTitle[MAX_PATH];
   GetConsoleTitle(szConsoleTitle, MAX_PATH);
   procStruct.pType = PS_SCAN;
-  procStruct.bSilent = false;
+  procStruct.is_silent = false;
   procStruct.title = GetMsg(MScanDirectory);
   procStruct.data[PT_ITEMS].total = 0;
   procStruct.data[PT_ALL].current = 0;
@@ -1793,7 +1793,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
   if (result != ABORT) {
     string sd_name, sRes;
     const wchar_t *msg[]{GetMsg(MGetFile), GetMsg(MCopyWarnIfExists), NULL, GetMsg(MYes), GetMsg(MNo), GetMsg(MAlwaysYes), GetMsg(MAlwaysNo), GetMsg(MCancel)};
-    intptr_t exResult = bSilent ? 2 : 0;
+    intptr_t exResult = is_silent ? 2 : 0;
     procStruct.pType = PS_COPY;
     procStruct.title = GetMsg(is_move ? MMoveFile: MGetFile);
     procStruct.nTotalStartTime = GetTickCount();
@@ -1857,7 +1857,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
           do {
             sRes.Clear();
             const wchar_t *spath = is_get ? procStruct.from.CPtr() : procStruct.to.CPtr();
-            if (Opt.SU && Opt.CopySD && !wcsstr(spath, L"/sdcard/") && !wcsstr(spath, L"/emulated/")) { //включено предварительное копирование на sd и источник/назначение не на sd-карте?
+            if (Opt.SU && Opt.CopySD && !StrStrW(spath, L"/sdcard/") && !StrStrW(spath, L"/emulated/")) { //включено предварительное копирование на sd и источник/назначение не на sd-карте?
               if (is_get) {
                 result = ADB_copy(procStruct.from.CPtr(), sd_name.CPtr(), sRes);
                 if (result)

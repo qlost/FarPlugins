@@ -11,11 +11,11 @@ HANDLE hRegexpSize = nullptr
      , hRegexpPart2 = nullptr
      , hRegexpFile = nullptr;
 
-BOOL ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wchar_t *parameters, bool wait)
+BOOL ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wchar_t *parameters, bool need_wait)
 {
   SHELLEXECUTEINFO ShExecInfo;
   ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-  ShExecInfo.fMask = SEE_MASK_DOENVSUBST | (wait ? SEE_MASK_NOCLOSEPROCESS : SEE_MASK_FLAG_NO_UI);
+  ShExecInfo.fMask = SEE_MASK_DOENVSUBST | (need_wait ? SEE_MASK_NOCLOSEPROCESS : SEE_MASK_FLAG_NO_UI);
   ShExecInfo.hwnd = nullptr;
   ShExecInfo.lpVerb = nullptr;
   ShExecInfo.lpFile = command;
@@ -25,7 +25,7 @@ BOOL ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wchar
 
   if (ShellExecuteEx(&ShExecInfo))
   {
-    if (!wait)
+    if (!need_wait)
       return TRUE;
 
     WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
@@ -36,9 +36,9 @@ BOOL ExecuteCommandLine(const wchar_t *command, const wchar_t *path, const wchar
   return FALSE;
 }
 
-string& EscapeCommand(string &cmd, bool quoted)
+string& EscapeCommand(string &cmd, bool need_quote)
 {
-  if (quoted) {
+  if (need_quote) {
     cmd.Replace(L"\\", L"\\\\");
     cmd.Replace(L"\"", L"\\\"");
     cmd.Replace(L"$", L"\\\\\\$");
@@ -76,7 +76,7 @@ void RegexpFree(HANDLE hRegex)
     PsInfo.RegExpControl(hRegex, RECTL_FREE, 0, nullptr);
 }
 
-intptr_t RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool set_end)
+intptr_t RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool need_end)
 {
   intptr_t brackets = 0;
   *match = NULL;
@@ -92,7 +92,7 @@ intptr_t RegExTokenize(wchar_t *str, HANDLE hRegex, RegExpMatch **match, bool se
           *match = NULL;
           brackets = 0;
         }
-        else if (set_end)
+        else if (need_end)
           for (intptr_t i = 0; i < brackets; i++) //конец строки после каждой скобки (т.к. после них всегда есть пробел)
             if ((*match)[i].end > 0)
               str[(*match)[i].end] = L'\0';
@@ -117,7 +117,7 @@ UINT64 ParseSizeInfo(wchar_t *s)
     if (match[2].start >= 0) {
       unsigned shift = 10;
       for (wchar_t *p = suffix; *p; p++) {
-        if (wcschr(s + match[2].start, *p) || wcschr(s + match[2].start, (*p)|0x20)) {
+        if (StrChrW(s + match[2].start, *p) || StrChrW(s + match[2].start, (*p)|0x20)) {
           size <<= shift;
           break;
         }

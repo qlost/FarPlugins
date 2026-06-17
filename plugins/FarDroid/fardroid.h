@@ -64,8 +64,8 @@ private:
   InfoPanelLines  lines;
   InfoSize        infoSize;
 
-  bool  ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs);
-  bool  ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecords &recs);
+  bool  ReadFileList(string &sFileList, bool is_silent, CFileRecords &recs);
+  bool  ADB_ls(const wchar_t *sDir, bool is_silent, bool is_one, CFileRecords &recs);
   bool  ADB_list(const wchar_t *sDir, CFileRecords &recs);
   bool  ADB_rm(const wchar_t *sSrc, string &sRes);
   bool  ADB_chmod(const wchar_t *sSrc, const wchar_t *octal, string &sRes);
@@ -89,12 +89,12 @@ private:
   bool    GetMemoryInfo();
   void    ParsePartitionInfo(wchar_t *sLine);
   void    GetPartitionsInfo();
-  bool    GetFiles(const wchar_t *sDir, bool bSilent, CFileRecords &recs);
+  bool    GetFiles(const wchar_t *sDir, bool is_silent, CFileRecords &recs);
   int     DeviceMenu(string &text);
   void    SetProgress(unsigned type);
   void    DrawProgress(wchar_t *buf, unsigned size, unsigned type);
   void    ShowProgressMessage();
-  bool    DeleteFileFrom(const wchar_t *src, bool bSilent);
+  bool    DeleteFileFrom(const wchar_t *src, bool is_silent);
   bool    ADBScanDirectory(size_t parent);
   bool    ScanDirectory(size_t parent);
   int     CopyErrorDialog(const wchar_t *sTitle, string &sRes);

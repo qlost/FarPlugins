@@ -253,13 +253,13 @@ void WINAPI FreeFindDataW(const struct FreeFindDataInfo* Info)
     for (size_t i = 0; i < Info->ItemsNumber; i++)
     {
       if (Info->PanelItem[i].FileName)
-        free((void*)Info->PanelItem[i].FileName);
+        LocalFree((void*)Info->PanelItem[i].FileName);
       if (Info->PanelItem[i].AlternateFileName)
-        free((void*)Info->PanelItem[i].AlternateFileName);
+        LocalFree((void*)Info->PanelItem[i].AlternateFileName);
       if (Info->PanelItem[i].Owner)
-        free((void*)Info->PanelItem[i].Owner);
+        LocalFree((void*)Info->PanelItem[i].Owner);
       if (Info->PanelItem[i].Description)
-        free((void*)Info->PanelItem[i].Description);
+        LocalFree((void*)Info->PanelItem[i].Description);
     }
     free(Info->PanelItem);
   }
