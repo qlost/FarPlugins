@@ -475,6 +475,7 @@ bool fardroid::ReadFileList(string &sFileList, bool is_silent, CFileRecords &rec
             st.wYear--;
         }
         if (st.wMonth) {
+          TzSpecificLocalTimeToSystemTime(NULL, &st, &st);
           SystemTimeToFileTime(&st, &rec->ctime);
           rec->mtime = rec->atime = rec->ctime;
         }
