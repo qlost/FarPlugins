@@ -96,7 +96,7 @@ bool Socket::SendADBCommand(string &cmd)
   return s ? SendADBCommand(s, (unsigned)cmd.UTFLen()) :  false;
 }
 
-void Socket::PrepareADBSocket()
+void Socket::PrepareADBSocket(bool is_silent)
 {FUNCTION
   int lastError = S_OK;
   CreateADBSocket();
@@ -130,7 +130,7 @@ void Socket::PrepareADBSocket()
           switch (android->DeviceMenu(devices))
           {
           case TRUE:
-            PrepareADBSocket();
+            PrepareADBSocket(is_silent);
             return;
           case ABORT:
             lastError = S_OK;
@@ -163,7 +163,7 @@ void Socket::PrepareADBSocket()
     {
       android->handleAdbServer = ExecuteCommandLine(L"adb.exe", Opt.ADBPath, L"start-server", true);
       if (android->handleAdbServer) {
-        PrepareADBSocket();
+        PrepareADBSocket(is_silent);
         return;
       }
       android->handleAdbServer = ABORT;
@@ -377,11 +377,11 @@ bool Socket::ADBPushFile(const wchar_t *sSrc, string &sDst, string &sRes)
   return result;
 }
 
-Socket::Socket(fardroid *a)
+Socket::Socket(fardroid *a, bool is_silent)
 {FUNCTION
   sock = 0;
   android = a;
-  PrepareADBSocket();
+  PrepareADBSocket(is_silent);
 }
 
 Socket::~Socket()
@@ -780,7 +780,29 @@ void fardroid::CheckCapabilities()
 
   if (Opt.UseSU) { //переключение adbd в root-режим
     Socket sock(this);
-    sock.SendADBCommand("root:");
+    char buf[256];
+    if (sock.SendADBCommand("root:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0 && StrStrA(buf, "restarting")) {
+      DEBUGNL();
+      Socket sock(this);
+      sock.SendADBCommand("host:wait-for-any-disconnect");
+      sock.ReadADBPacket(buf, sizeof(buf)-1);
+      DEBUGNL();
+      unsigned countdown = 12;
+      while (countdown > 0) { // ожидание подключения устройства максимум 12 секунд, как в adb
+        Sleep(1000);
+        {
+          Socket sock(this, true);
+          if (sock) {
+            if (sock.SendADBCommand("host:wait-for-any-device")) {
+              sock.ReadADBPacket(buf, sizeof(buf)-1);
+              DEBUGNL();
+            }
+            break;
+          }
+        }
+        countdown--;
+      }
+    }
   }
 
 #ifdef USE_DEBUG

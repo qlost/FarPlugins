@@ -126,9 +126,9 @@ private:
 
   void  CreateADBSocket();
   void  CloseADBSocket();
-  void  PrepareADBSocket();
+  void  PrepareADBSocket(bool is_silent);
 public:
-  Socket(fardroid *a);
+  Socket(fardroid *a, bool is_silent = false);
   ~Socket();
   operator bool() const { return !!sock; }
 
