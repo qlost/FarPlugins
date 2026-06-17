@@ -32,7 +32,7 @@ void Socket::CloseADBSocket()
   }
 }
 
-bool Socket::SendADBPacket(void *packet, int size)
+bool Socket::SendADBPacket(const void *packet, int size)
 {
   if (!sock)
     return false;
@@ -75,20 +75,25 @@ int Socket::ReadADBPacket(void *packet, int size)
   return received;
 }
 
-bool Socket::SendADBCommand(string &cmd)
+bool Socket::SendADBCommand(const char *cmd, unsigned len)
 {FUNCTION
-  char buf[5], *s = cmd.toUTF8();
-  if (!s)
-    return false;
-  unsigned size = (unsigned)cmd.UTFLen();
-  wsprintfA(buf, "%04X", size);
+  char buf[5];
+  if (len == 0)
+    len = lstrlenA(cmd);
+  wsprintfA(buf, "%04X", len);
   SendADBPacket(buf, sizeof(buf)-1);
-  SendADBPacket(s, size);
+  SendADBPacket(cmd, len);
   DEBUGNL();
   UINT32 msg = 0;
   ReadADBPacket(&msg, sizeof(msg));
   DEBUGNL();
   return msg == ID_OKAY;
+}
+
+bool Socket::SendADBCommand(string &cmd)
+{
+  char *s = cmd.toUTF8();
+  return s ? SendADBCommand(s, (unsigned)cmd.UTFLen()) :  false;
 }
 
 void Socket::PrepareADBSocket()
@@ -99,8 +104,7 @@ void Socket::PrepareADBSocket()
   {
     if (android->currentDevice.IsEmpty())
     {
-      string cmd = L"host:devices";
-      if (SendADBCommand(cmd))
+      if (SendADBCommand("host:devices"))
       {
         string devices;
         UINT32 msg = 0;
@@ -505,9 +509,8 @@ bool fardroid::ADB_list(const wchar_t *sDir, CFileRecords &recs)
 {FUNCTION
   bool ret = false;
   Socket sock(this);
-  string cmd = L"sync:";
   recs.RemoveAll();
-  if (sock.SendADBCommand(cmd))
+  if (sock.SendADBCommand("sync:"))
   {
     syncmsg msg;
     char buf[257];
@@ -631,8 +634,7 @@ bool fardroid::ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes)
 bool fardroid::ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec)
 {FUNCTION
   Socket sock(this);
-  string cmd = L"sync:";
-  if (sock.SendADBCommand(cmd)) {
+  if (sock.SendADBCommand("sync:")) {
     bool res = sock.ADBPullFile(sSrc, sDst, sRes, rec);
     sock.ADBSyncQuit();
     return res;
@@ -643,8 +645,7 @@ bool fardroid::ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const C
 bool fardroid::ADB_push(const wchar_t *sSrc, string &sDst, string &sRes)
 {FUNCTION
   Socket sock(this);
-  string cmd = L"sync:";
-  if (sock.SendADBCommand(cmd)) {
+  if (sock.SendADBCommand("sync:")) {
     bool res = sock.ADBPushFile(sSrc, sDst, sRes);
     sock.ADBSyncQuit();
     return res;
@@ -750,8 +751,7 @@ void fardroid::CheckCapabilities()
   string sRes;
   if (Opt.WorkMode == WORKMODE_SAFE) {
     Socket sock(this);
-    string cmd = L"sync:";
-    if (sock.SendADBCommand(cmd)) {
+    if (sock.SendADBCommand("sync:")) {
       syncmsg msg;
       msg.req.id = ID_LIS2;
       msg.req.namelen = 1;
@@ -780,8 +780,7 @@ void fardroid::CheckCapabilities()
 
   if (Opt.UseSU) { //переключение adbd в root-режим
     Socket sock(this);
-    string cmd = L"root:";
-    sock.SendADBCommand(cmd);
+    sock.SendADBCommand("root:");
   }
 
 #ifdef USE_DEBUG
@@ -1194,8 +1193,7 @@ void fardroid::GetFramebuffer()
   struct fbinfo fbinfo;
   Socket sock(this);
   if (sock) {
-    string cmd = L"framebuffer:";
-    if (sock.SendADBCommand(cmd) && sock.ReadADBPacket(&fbinfo, sizeof(struct fbinfo)) > 0) {
+    if (sock.SendADBCommand("framebuffer:") && sock.ReadADBPacket(&fbinfo, sizeof(struct fbinfo)) > 0) {
       fb.bpp = fbinfo.bpp;
       UINT32 tmp;
       if ((fbinfo.version != 2 || sock.ReadADBPacket(&tmp, sizeof(tmp)) > 0) && sock.ReadADBPacket(&fb.size, sizeof(struct fb)-4) > 0) {

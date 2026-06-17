@@ -132,8 +132,9 @@ public:
   ~Socket();
   operator bool() const { return !!sock; }
 
-  bool  SendADBPacket(void *packet, int size);
+  bool  SendADBPacket(const void *packet, int size);
   int   ReadADBPacket(void *packet, int size);
+  bool  SendADBCommand(const char *cmd, unsigned len = 0);
   bool  SendADBCommand(string &sCMD);
   bool  ADBShellExecute(string &cmd, string &sRes);
   void  ADBSyncQuit();
