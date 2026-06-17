@@ -66,7 +66,7 @@ private:
 
   bool  ReadFileList(string &sFileList, bool bSilent, CFileRecords &recs);
   bool  ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecords &recs);
-  bool  ADB_list(const wchar_t *sDir, bool bSilent, CFileRecords &recs);
+  bool  ADB_list(const wchar_t *sDir, CFileRecords &recs);
   bool  ADB_rm(const wchar_t *sSrc, string &sRes);
   bool  ADB_chmod(const wchar_t *sSrc, const wchar_t *octal, string &sRes);
   bool  ADB_chown(const wchar_t *sSrc, const wchar_t *user, const wchar_t *group, string &sRes);
@@ -89,6 +89,7 @@ private:
   bool    GetMemoryInfo();
   void    ParsePartitionInfo(wchar_t *sLine);
   void    GetPartitionsInfo();
+  bool    GetFiles(const wchar_t *sDir, bool bSilent, CFileRecords &recs);
   int     DeviceMenu(string &text);
   void    SetProgress(unsigned type);
   void    DrawProgress(wchar_t *buf, unsigned size, unsigned type);

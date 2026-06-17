@@ -497,81 +497,77 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool bSilent, bool is_one, CFileRecor
     sDir,
     is_one ? L"" : L"/"
   );
+  recs.RemoveAll();
   return sock.ADBShellExecute(cmd, sRes) && ReadFileList(sRes, bSilent, recs);
 }
 
-bool fardroid::ADB_list(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
+bool fardroid::ADB_list(const wchar_t *sDir, CFileRecords &recs)
 {FUNCTION
   bool ret = false;
+  Socket sock(this);
+  string cmd = L"sync:";
   recs.RemoveAll();
-  if (Opt.WorkMode != WORKMODE_SAFE)
-    ret = ADB_ls(sDir, bSilent, false, recs);
-  else
+  if (sock.SendADBCommand(cmd))
   {
-    Socket sock(this);
-    string cmd = L"sync:";
-    if (sock.SendADBCommand(cmd))
-    {
-      syncmsg msg;
-      char buf[257];
-      string file = sDir;
-      char *dir = file.toUTF8();
-      msg.req.id = Opt.UseLIS2 ? ID_LIS2 : ID_LIST;
-      msg.req.namelen = (unsigned)file.UTFLen();
-      if (msg.req.namelen > 1024)
-        return false;
+    syncmsg msg;
+    char buf[257];
+    string file = sDir;
+    char *dir = file.toUTF8();
+    msg.req.id = Opt.UseLIS2 ? ID_LIS2 : ID_LIST;
+    msg.req.namelen = (unsigned)file.UTFLen();
+    if (msg.req.namelen > 1024)
+      return false;
 
-      if (sock.SendADBPacket(&msg.req, sizeof(msg.req)) && sock.SendADBPacket(dir, msg.req.namelen))
-      {
-        while (true) {
-          DEBUGNL();
+    if (sock.SendADBPacket(&msg.req, sizeof(msg.req)) && sock.SendADBPacket(dir, msg.req.namelen))
+    {
+      while (true) {
+        DEBUGNL();
+        if (Opt.UseLIS2) {
+          if (sock.ReadADBPacket(&msg.dnt2, sizeof(msg.dnt2)) <= 0)
+            break;
+          if (msg.dnt2.id == ID_DONE) {
+            ret = true;
+            break;
+          }
+          if (msg.dnt2.id != ID_DNT2 || msg.dnt2.namelen > 256 || sock.ReadADBPacket(buf, msg.dnt2.namelen) <= 0)
+            break;
+          buf[msg.dnt2.namelen] = '\0';
+        }
+        else {
+          if (sock.ReadADBPacket(&msg.dent, sizeof(msg.dent)) <= 0)
+            break;
+          if (msg.dent.id == ID_DONE) {
+            ret = true;
+            break;
+          }
+          if (msg.dent.id != ID_DENT || msg.dent.namelen > 256 || sock.ReadADBPacket(buf, msg.dent.namelen) <= 0)
+            break;
+          buf[msg.dent.namelen] = '\0';
+        }
+
+        if (lstrcmpA(buf, ".") != 0 && lstrcmpA(buf, "..") != 0)
+        {
+          CFileRecord *rec = new CFileRecord;
+          rec->filename.fromChar(buf, CP_UTF8);
           if (Opt.UseLIS2) {
-            if (sock.ReadADBPacket(&msg.dnt2, sizeof(msg.dnt2)) <= 0)
-              break;
-            if (msg.dnt2.id == ID_DONE) {
-              ret = true;
-              break;
-            }
-            if (msg.dnt2.id != ID_DNT2 || msg.dnt2.namelen > 256 || sock.ReadADBPacket(buf, msg.dnt2.namelen) <= 0)
-              break;
-            buf[msg.dnt2.namelen] = '\0';
+            rec->owner.Format(L"%u", msg.dnt2.uid);
+            rec->grp.Format(L"%u", msg.dnt2.gid);
+            rec->mode = msg.dnt2.mode;
+            rec->size = msg.dnt2.size;
+            rec->ctime = UnixTimeToFileTime(msg.dnt2.ctime);
+            rec->mtime = UnixTimeToFileTime(msg.dnt2.mtime);
+            rec->atime = UnixTimeToFileTime(msg.dnt2.atime);
           }
           else {
-            if (sock.ReadADBPacket(&msg.dent, sizeof(msg.dent)) <= 0)
-              break;
-            if (msg.dent.id == ID_DONE) {
-              ret = true;
-              break;
-            }
-            if (msg.dent.id != ID_DENT || msg.dent.namelen > 256 || sock.ReadADBPacket(buf, msg.dent.namelen) <= 0)
-              break;
-            buf[msg.dent.namelen] = '\0';
+            rec->mode = msg.dent.mode;
+            rec->size = msg.dent.size;
+            rec->ctime = rec->mtime = rec->atime = UnixTimeToFileTime(msg.dent.time);
           }
-
-          if (lstrcmpA(buf, ".") != 0 && lstrcmpA(buf, "..") != 0)
-          {
-            CFileRecord *rec = new CFileRecord;
-            rec->filename.fromChar(buf, CP_UTF8);
-            if (Opt.UseLIS2) {
-              rec->owner.Format(L"%u", msg.dnt2.uid);
-              rec->grp.Format(L"%u", msg.dnt2.gid);
-              rec->mode = msg.dnt2.mode;
-              rec->size = msg.dnt2.size;
-              rec->ctime = UnixTimeToFileTime(msg.dnt2.ctime);
-              rec->mtime = UnixTimeToFileTime(msg.dnt2.mtime);
-              rec->atime = UnixTimeToFileTime(msg.dnt2.atime);
-            }
-            else {
-              rec->mode = msg.dent.mode;
-              rec->size = msg.dent.size;
-              rec->ctime = rec->mtime = rec->atime = UnixTimeToFileTime(msg.dent.time);
-            }
-            recs.Add(rec);
-          }
-        }//while
-      }//send
-      DEBUGNL();
-    }
+          recs.Add(rec);
+        }
+      }//while
+    }//send
+    DEBUGNL();
   }
   return ret;
 }
@@ -1068,10 +1064,15 @@ void fardroid::PreparePanel(OpenPanelInfo *Info)
     Info->Flags |= OPIF_ADDDOTS;
 }
 
+bool fardroid::GetFiles(const wchar_t *sDir, bool bSilent, CFileRecords &recs)
+{
+  return (Opt.WorkMode == WORKMODE_SAFE) ? ADB_list(sDir, recs) : ADB_ls(sDir, bSilent, false, recs);
+}
+
 bool fardroid::GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode)
 {
   CFileRecords recs;
-  if (ADB_list(currentPath.CPtr(), false, recs)) {
+  if (GetFiles(currentPath.CPtr(), false, recs)) {
     *pItemsNumber = recs.size();
     if (*pItemsNumber > 0) {
       PluginPanelItem *NewPanelItem = (PluginPanelItem*)calloc(*pItemsNumber, sizeof(PluginPanelItem)); //+HEAP_ZERO_MEMORY
@@ -1614,7 +1615,7 @@ bool fardroid::Copy_Rename(bool is_copy)
 bool fardroid::ADBScanDirectory(size_t parent)
 {FUNCTION
   CFileRecords recs;
-  if (ADB_list(copy_recs[parent]->src.CPtr(), true, recs)) {
+  if (GetFiles(copy_recs[parent]->src.CPtr(), true, recs)) {
     for (size_t i = 0; i < recs.size(); i++) {
       if (CheckForEsc())
         return false;
