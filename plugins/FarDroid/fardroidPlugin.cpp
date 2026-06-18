@@ -123,7 +123,6 @@ void WINAPI GetPluginInfoW(struct PluginInfo* Info)
 
 HANDLE WINAPI OpenW(const struct OpenInfo* Info)
 {FUNCTION
-  HANDLE res = NULL;
   switch (Info->OpenFrom) {
   case OPEN_LEFTDISKMENU:
   case OPEN_RIGHTDISKMENU:
@@ -131,15 +130,13 @@ HANDLE WINAPI OpenW(const struct OpenInfo* Info)
   case OPEN_COMMANDLINE:
     fardroid *android = new fardroid();
     if (android) {
-      if (Info->OpenFrom == OPEN_COMMANDLINE)
-        res = android->OpenFromCommandLine(((OpenCommandLineInfo*)Info->Data)->CommandLine);
+      if (android->Open(Info->OpenFrom == OPEN_COMMANDLINE ? ((OpenCommandLineInfo*)Info->Data)->CommandLine : NULL))
+        return android;
       else
-        res = android->OpenFromMainMenu();
-      if (!res)
         delete android;
     }
   }
-  return res;
+  return NULL;
 }
 
 void WINAPI ClosePanelW(const struct ClosePanelInfo* Info)

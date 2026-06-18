@@ -107,8 +107,7 @@ public:
   void    DeviceNameDialog();
   void    CheckCapabilities();
   void    ChangeDir(const wchar_t *sDir);
-  HANDLE  OpenFromMainMenu();
-  HANDLE  OpenFromCommandLine(const wchar_t *cmd);
+  HANDLE  Open(const wchar_t *cmd);
   void    PreparePanel(struct OpenPanelInfo *Info);
   bool    GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
   void    Remount(const wchar_t *Mode);

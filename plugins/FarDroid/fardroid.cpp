@@ -1027,54 +1027,43 @@ void fardroid::ChangeDir(const wchar_t *sDir)
   UpdateFreeSize();
 }
 
-HANDLE fardroid::OpenFromMainMenu()
+HANDLE fardroid::Open(const wchar_t *cmd)
 {FUNCTION
   if (!GetDeviceInfo())
     return NULL;
   CheckCapabilities();
 
+  const wchar_t *path = NULL, *remount = NULL;
+  if (cmd) {
+    DEBUGLOG(cmd);
+    wchar_t *p = (wchar_t*)cmd, *sLine;
+    while (true) {
+      sLine = wcstok(p, L" ");
+      if (!sLine)
+        break;
+      p = NULL;
+      if (sLine[0] != L'-')
+        path = sLine;
+      else if (!lstrcmp(sLine, L"-remount:rw"))
+        remount = L"rw";
+      else if (!lstrcmp(sLine, L"-remount:ro"))
+        remount = L"ro";
+    }
+    ChangeDir(path ? path : L"/");
+  }
+  else {
+    PluginSettings settings(MainGuid, PsInfo.SettingsControl);
+    ChangeDir(settings.Get(settings.OpenSubKey(0, L"devices"), currentDevice.CPtr(), L"/"));
+    if (Opt.RemountSystem)
+      remount = L"rw";
+  }
+
   string sRes;
-  if (Opt.RemountSystem)
-    ADB_mount(L"/system", L"rw", sRes);
-  PluginSettings settings(MainGuid, PsInfo.SettingsControl);
-  ChangeDir(settings.Get(settings.OpenSubKey(0, L"devices"), currentDevice.CPtr(), L"/"));
+  if (remount)
+    ADB_mount(path ? path : L"/system", remount, sRes);
+
   UpdateInfoLines();
   return (HANDLE)this;
-}
-
-HANDLE fardroid::OpenFromCommandLine(const wchar_t *cmd)
-{FUNCTION
-  DEBUGLOG(cmd);
-  if (!GetDeviceInfo())
-    return NULL;
-  CheckCapabilities();
-
-  const wchar_t *filename = NULL, *remount = NULL;
-  wchar_t *p = (wchar_t*)cmd, *sLine;
-  while (true) {
-    sLine = wcstok(p, L" ");
-    if (!sLine)
-      break;
-    p = NULL;
-    if (sLine[0] != L'-')
-      filename = sLine;
-    else if (!lstrcmp(sLine, L"-remount:rw"))
-      remount = L"rw";
-    else if (!lstrcmp(sLine, L"-remount:ro"))
-      remount = L"ro";
-  }
-
-  string sRes;
-  bool isOk = remount ? ADB_mount(filename ? filename : L"/system", remount, sRes) : false;
-  if (filename)
-    ChangeDir(filename);
-
-  if (isOk) {
-    UpdateInfoLines();
-    return (HANDLE)this;
-  }
-  else
-    return OpenFromMainMenu();
 }
 
 void fardroid::PreparePanel(OpenPanelInfo *Info)
