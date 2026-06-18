@@ -1956,7 +1956,8 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
 
     PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
   }//получение полного списка не было прервано
-  UpdateInfoLines();
+  if (!is_get || is_move)
+    UpdateInfoLines();
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
   SetConsoleTitle(szConsoleTitle);
   copy_recs.RemoveAll();
