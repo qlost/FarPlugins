@@ -496,7 +496,7 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool is_silent, bool is_one, CFileRec
     L"%sls -la%s%s%s%s \"%s%s\"",
     Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"",
     Opt.UseLS_N ? L"N" : L"",
-    Opt.ShowLinksAsDir ? L"L" : L"",
+    Opt.UseLS_L ? L"L" : L"",
     is_one ? L"d" : L"",
     Opt.UseNoColor ? L" --color=never" : L"",
     sDir,
@@ -771,6 +771,7 @@ void fardroid::CheckCapabilities()
     }
   }
   else {
+    Opt.UseLS_L = Opt.ShowLinksAsDir && CheckLSOption(L"ls -Lla", sRes);
     Opt.UseLS_N = CheckLSOption(L"ls -Nla", sRes);
     if (!Opt.UseLS_N)
       CheckLSOption(L"ls -la", sRes);
@@ -808,7 +809,7 @@ void fardroid::CheckCapabilities()
 
 #ifdef USE_DEBUG
   string log;
-  log.Format(L"UseLIS2=%u  UseLS_N=%u  UseNoColor=%u", Opt.UseLIS2, Opt.UseLS_N, Opt.UseNoColor);
+  log.Format(L"UseLIS2=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u", Opt.UseLIS2, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor);
   DEBUGLOG(log.CPtr());
 #endif
 }

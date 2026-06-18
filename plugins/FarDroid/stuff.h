@@ -79,6 +79,7 @@ struct Options {
   bool    CopySD;
   bool    RemountSystem;
   bool    UseLIS2; //доступна 2я версия получения списка файлов ?
+  bool    UseLS_L; //доступно разыменовывание ссылок ls -L ?
   bool    UseLS_N; //доступно отключение экранирования символов ls -N ?
   bool    UseNoColor; //доступна опция ls --color=never ?
 };
