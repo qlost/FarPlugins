@@ -63,6 +63,7 @@ private:
   InfoPanelLine   *InfoPanelLineArray;
   InfoPanelLines  lines;
   InfoSize        infoSize;
+  unsigned long long FreeSize;
 
   bool  ReadFileList(string &sFileList, bool is_silent, CFileRecords &recs);
   bool  ADB_ls(const wchar_t *sDir, bool is_silent, bool is_one, CFileRecords &recs);
@@ -84,11 +85,12 @@ private:
   bool    CheckForEsc();
   void    DeviceNameDialog(const wchar_t *name);
   bool    CheckLSOption(const wchar_t *s_cmd, string &sRes);
-  void    CheckCapabilities();
   bool    GetDeviceInfo();
   bool    GetMemoryInfo();
   void    ParsePartitionInfo(wchar_t *sLine);
   void    GetPartitionsInfo();
+  void    UpdateFreeSize();
+  void    UpdateInfoLines();
   bool    GetFiles(const wchar_t *sDir, bool is_silent, CFileRecords &recs);
   int     DeviceMenu(string &text);
   void    SetProgress(unsigned type);
@@ -103,7 +105,7 @@ public:
   ~fardroid();
 
   void    DeviceNameDialog();
-  bool    UpdateInfoLines();
+  void    CheckCapabilities();
   void    ChangeDir(const wchar_t *sDir);
   HANDLE  OpenFromMainMenu();
   HANDLE  OpenFromCommandLine(const wchar_t *cmd);

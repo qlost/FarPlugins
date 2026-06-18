@@ -956,7 +956,14 @@ void fardroid::GetPartitionsInfo()
   }
 }
 
-bool fardroid::UpdateInfoLines()
+void fardroid::UpdateFreeSize()
+{FUNCTION
+  for (size_t i = 0; i < infoSize.size(); i++)
+    if (currentPath.startsWith(infoSize[i]->path))
+      FreeSize = infoSize[i]->free;
+}
+
+void fardroid::UpdateInfoLines()
 {FUNCTION
   lines.RemoveAll();
   infoSize.RemoveAll();
@@ -966,13 +973,7 @@ bool fardroid::UpdateInfoLines()
   pl->separator = true;
   lines.Add(pl);
 
-  Opt.SU = false;
   Opt.SU0 = false;
-  if (!GetDeviceInfo())
-    return false;
-
-  CheckCapabilities();
-
   Opt.SU = Opt.UseSU;
   bool res = GetMemoryInfo();
 
@@ -1003,7 +1004,8 @@ bool fardroid::UpdateInfoLines()
       InfoPanelLineArray[i].Flags = lines[i]->separator ? IPLFLAGS_SEPARATOR : 0;
     }
   }
-  return true;
+
+  UpdateFreeSize();
 }
 
 void fardroid::ChangeDir(const wchar_t *sDir)
@@ -1019,24 +1021,30 @@ void fardroid::ChangeDir(const wchar_t *sDir)
   }
   else
     currentPath = ConcatPath(currentPath, sDir);
+  panelTitle = currentDeviceName;
+  panelTitle += currentPath;
+  panelTitle += Opt.SU ? L" #" : L" $";
+  UpdateFreeSize();
 }
 
 HANDLE fardroid::OpenFromMainMenu()
 {FUNCTION
-  if (!UpdateInfoLines())
+  if (!GetDeviceInfo())
     return NULL;
+
   string sRes;
   if (Opt.RemountSystem)
     ADB_mount(L"/system", L"rw", sRes);
   PluginSettings settings(MainGuid, PsInfo.SettingsControl);
   ChangeDir(settings.Get(settings.OpenSubKey(0, L"devices"), currentDevice.CPtr(), L"/"));
+  UpdateInfoLines();
   return (HANDLE)this;
 }
 
 HANDLE fardroid::OpenFromCommandLine(const wchar_t *cmd)
 {FUNCTION
   DEBUGLOG(cmd);
-  if (!UpdateInfoLines())
+  if (!GetDeviceInfo())
     return NULL;
 
   const wchar_t *filename = NULL, *remount = NULL;
@@ -1055,29 +1063,21 @@ HANDLE fardroid::OpenFromCommandLine(const wchar_t *cmd)
   }
 
   string sRes;
-  bool isOk = false;
-  if (remount)
-    isOk = ADB_mount(filename ? filename : L"/system", remount, sRes);
+  bool isOk = remount ? ADB_mount(filename ? filename : L"/system", remount, sRes) : false;
   if (filename)
     ChangeDir(filename);
 
-  if (isOk)
+  if (isOk) {
+    UpdateInfoLines();
     return (HANDLE)this;
+  }
   else
-    OpenFromMainMenu();
-  return NULL;
+    return OpenFromMainMenu();
 }
 
 void fardroid::PreparePanel(OpenPanelInfo *Info)
 {
-  unsigned long long size = 0;
-  for (size_t i = 0; i < infoSize.size(); i++)
-    if (currentPath.startsWith(infoSize[i]->path))
-      size = infoSize[i]->free;
-  Info->FreeSize = size;
-  panelTitle = currentDeviceName;
-  panelTitle += currentPath;
-  panelTitle += Opt.SU ? L" #" : L" $";
+  Info->FreeSize = FreeSize;
   Info->PanelTitle = panelTitle.CPtr();
   Info->CurDir = currentPath.CPtr();
   Info->InfoLines = InfoPanelLineArray;
@@ -1578,6 +1578,7 @@ bool fardroid::DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERA
     if (!DeleteFileFrom(procStruct.from.CPtr(), is_silent))
       break;
   }
+  UpdateInfoLines();
   PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
   SetConsoleTitle(szConsoleTitle);
@@ -1599,8 +1600,10 @@ int fardroid::CreateDir(const wchar_t **DestPath, OPERATION_MODES OpMode)
     newDir = ConcatPath(currentPath, *DestPath);
 
   string sRes;
-  if (ADB_mkdir(newDir.CPtr(), sRes))
+  if (ADB_mkdir(newDir.CPtr(), sRes)) {
+    UpdateInfoLines();
     return TRUE;
+  }
   else {
     const wchar_t *msg[]{GetMsg(MError), sRes.CPtr()};
     PsInfo.Message(&MainGuid, &MsgGuid, FMSG_WARNING | FMSG_MB_OK, NULL, msg, _ARRAYSIZE(msg), 0);
@@ -1953,6 +1956,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
 
     PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
   }//получение полного списка не было прервано
+  UpdateInfoLines();
   PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
   SetConsoleTitle(szConsoleTitle);
   copy_recs.RemoveAll();
