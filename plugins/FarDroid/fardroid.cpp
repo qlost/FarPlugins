@@ -750,6 +750,46 @@ bool fardroid::CheckLSOption(const wchar_t *s_cmd, string &sRes)
 void fardroid::CheckCapabilities()
 {FUNCTION
   string sRes;
+
+  // Переключение adbd в root-режим
+  if (Opt.UseSU) {
+    Socket sock(this);
+    char buf[256];
+    if (sock.SendADBCommand("root:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0 && StrStrA(buf, "restarting")) {
+      DEBUGNL();
+      Socket sock(this);
+      sock.SendADBCommand("host:wait-for-any-disconnect");
+      sock.ReadADBPacket(buf, sizeof(buf)-1);
+      DEBUGNL();
+      unsigned countdown = 12;
+      while (countdown > 0) { //ожидание подключения устройства максимум 12 секунд, как в adb
+        Sleep(1000);
+        {
+          Socket sock(this, true);
+          if (sock) {
+            if (sock.SendADBCommand("host:wait-for-any-device")) {
+              sock.ReadADBPacket(buf, sizeof(buf)-1);
+              DEBUGNL();
+            }
+            break;
+          }
+        }
+        countdown--;
+      }
+    }
+  }
+
+  // Проверка доступности root
+  Opt.SU0 = false;
+  Opt.SU = Opt.UseSU;
+  bool res = CheckLSOption(L"ls -la", sRes);
+  if (Opt.SU && !res) {
+    Opt.SU0 = true;
+    res = CheckLSOption(L"ls -la", sRes);
+  }
+  if (Opt.SU && !res)
+    Opt.SU = false;
+
   if (Opt.WorkMode == WORKMODE_SAFE) {
     Socket sock(this);
     if (sock.SendADBCommand("sync:")) {
@@ -780,36 +820,9 @@ void fardroid::CheckCapabilities()
     // А если --color=never не работает или с ней всё равно остаётся расцветка, то придётся резать ESC-коды регэкспами
   }
 
-  if (Opt.UseSU) { //переключение adbd в root-режим
-    Socket sock(this);
-    char buf[256];
-    if (sock.SendADBCommand("root:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0 && StrStrA(buf, "restarting")) {
-      DEBUGNL();
-      Socket sock(this);
-      sock.SendADBCommand("host:wait-for-any-disconnect");
-      sock.ReadADBPacket(buf, sizeof(buf)-1);
-      DEBUGNL();
-      unsigned countdown = 12;
-      while (countdown > 0) { // ожидание подключения устройства максимум 12 секунд, как в adb
-        Sleep(1000);
-        {
-          Socket sock(this, true);
-          if (sock) {
-            if (sock.SendADBCommand("host:wait-for-any-device")) {
-              sock.ReadADBPacket(buf, sizeof(buf)-1);
-              DEBUGNL();
-            }
-            break;
-          }
-        }
-        countdown--;
-      }
-    }
-  }
-
 #ifdef USE_DEBUG
   string log;
-  log.Format(L"UseLIS2=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u", Opt.UseLIS2, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor);
+  log.Format(L"SU=%u  SU0=%u  UseLIS2=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u", Opt.SU, Opt.SU0, Opt.UseLIS2, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor);
   DEBUGLOG(log.CPtr());
 #endif
 }
@@ -974,21 +987,7 @@ void fardroid::UpdateInfoLines()
   pl->separator = true;
   lines.Add(pl);
 
-  Opt.SU0 = false;
-  Opt.SU = Opt.UseSU;
-  bool res = GetMemoryInfo();
-
-  if (Opt.SU && !res) {
-    Opt.SU0 = true;
-    res = GetMemoryInfo();
-  }
-
-  if (Opt.SU && !res)
-  {
-    Opt.SU = false;
-    GetMemoryInfo();
-  }
-
+  GetMemoryInfo();
   GetPartitionsInfo();
 
   if (InfoPanelLineArray) {
@@ -1020,7 +1019,7 @@ void fardroid::ChangeDir(const wchar_t *sDir)
     const wchar_t *p = StrRChrW(currentPath.CPtr(), NULL, L'/');
     currentPath.SetLen((p == currentPath.CPtr()) ? 1 : p - currentPath.CPtr());
   }
-  else
+  else if (sDir[0] != L'\0')
     currentPath = ConcatPath(currentPath, sDir);
   panelTitle = currentDeviceName;
   panelTitle += currentPath;
@@ -1032,6 +1031,7 @@ HANDLE fardroid::OpenFromMainMenu()
 {FUNCTION
   if (!GetDeviceInfo())
     return NULL;
+  CheckCapabilities();
 
   string sRes;
   if (Opt.RemountSystem)
@@ -1047,6 +1047,7 @@ HANDLE fardroid::OpenFromCommandLine(const wchar_t *cmd)
   DEBUGLOG(cmd);
   if (!GetDeviceInfo())
     return NULL;
+  CheckCapabilities();
 
   const wchar_t *filename = NULL, *remount = NULL;
   wchar_t *p = (wchar_t*)cmd, *sLine;
@@ -1937,7 +1938,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
 
     if (result != ABORT) {
       result = ((OpMode & (OPM_VIEW | OPM_EDIT)) != 0);
-      if (PanelItemResult) // можно снять выделение с последнего элемента панели?
+      if (PanelItemResult) //можно снять выделение с последнего элемента панели?
         PanelItem[PanelItemNumber].Flags &= ~PPIF_SELECTED;
 
       // Удаление всех каталогов, из которых успешно перенесены все файлы

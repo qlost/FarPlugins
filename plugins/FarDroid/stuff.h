@@ -73,11 +73,12 @@ struct Options {
   bool    AddToDiskMenu;
   bool    ShowLinksAsDir;
   bool    KillServer;
-  bool    SU;
-  bool    SU0;
   bool    UseSU;
   bool    CopySD;
   bool    RemountSystem;
+  //settings
+  bool    SU; //использовать su -c ?
+  bool    SU0; //использовать su 0 ?
   bool    UseLIS2; //доступна 2я версия получения списка файлов ?
   bool    UseLS_L; //доступно разыменовывание ссылок ls -L ?
   bool    UseLS_N; //доступно отключение экранирования символов ls -N ?

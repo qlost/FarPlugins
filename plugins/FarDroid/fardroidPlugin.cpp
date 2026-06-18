@@ -135,9 +135,7 @@ HANDLE WINAPI OpenW(const struct OpenInfo* Info)
         res = android->OpenFromCommandLine(((OpenCommandLineInfo*)Info->Data)->CommandLine);
       else
         res = android->OpenFromMainMenu();
-      if (res)
-        android->CheckCapabilities();
-      else
+      if (!res)
         delete android;
     }
   }
@@ -211,8 +209,10 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     PanelInfo PInfo{sizeof(PanelInfo)};
     for (HANDLE h = PANEL_ACTIVE; h >= PANEL_PASSIVE; h = (HANDLE)((intptr_t)h - (intptr_t)PANEL_ACTIVE + (intptr_t)PANEL_PASSIVE)) {
       PsInfo.PanelControl(h, FCTL_GETPANELINFO, 0, (void*)&PInfo);
-      if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid)
+      if (PInfo.PluginHandle && PInfo.OwnerGuid == MainGuid) {
         ((fardroid*)PInfo.PluginHandle)->CheckCapabilities();
+        ((fardroid*)PInfo.PluginHandle)->ChangeDir(L"");
+      }
     }
     return true;
   }
