@@ -581,7 +581,7 @@ bool fardroid::ADB_rm(const wchar_t *sSrc, string &sRes)
   Socket sock(this);
   string s;
   s.Format(L"rm -rf \"%s\"", sSrc);
-  return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
 }
 
 bool fardroid::ADB_chmod(const wchar_t *sSrc, const wchar_t *octal, string &sRes)
@@ -589,7 +589,7 @@ bool fardroid::ADB_chmod(const wchar_t *sSrc, const wchar_t *octal, string &sRes
   Socket sock(this);
   string s;
   s.Format(L"chmod %s \"%s\"", octal, sSrc);
-  return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
 }
 
 bool fardroid::ADB_chown(const wchar_t *sSrc, const wchar_t *user, const wchar_t *group, string &sRes)
@@ -597,7 +597,7 @@ bool fardroid::ADB_chown(const wchar_t *sSrc, const wchar_t *user, const wchar_t
   Socket sock(this);
   string s;
   s.Format(L"chown %s:%s \"%s\"", user, group, sSrc);
-  return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
 }
 
 bool fardroid::ADB_mount(const wchar_t *sFS, const wchar_t *sMode, string &sRes)
@@ -613,7 +613,7 @@ bool fardroid::ADB_mkdir(const wchar_t *sDir, string &sRes)
   Socket sock(this);
   string s;
   s.Format(L"mkdir -p \"%s\"", sDir);
-  return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
 }
 
 bool fardroid::ADB_rename(const wchar_t *sSrc, const wchar_t *sDst, string &sRes)
@@ -621,7 +621,7 @@ bool fardroid::ADB_rename(const wchar_t *sSrc, const wchar_t *sDst, string &sRes
   Socket sock(this);
   string s;
   s.Format(L"mv \"%s\" \"%s\"", sSrc, sDst);
-  return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
 }
 
 bool fardroid::ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes)
@@ -629,7 +629,7 @@ bool fardroid::ADB_copy(const wchar_t *sSrc, const wchar_t *sDst, string &sRes)
   Socket sock(this);
   string s;
   s.Format(L"cp \"%s\" \"%s\"", sSrc, sDst);
-  return sock && sock.ADBShellExecute(s, sRes) && !sRes.Len();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
 }
 
 bool fardroid::ADB_pull(string &sSrc, const wchar_t *sDst, string &sRes, const CCopyRecord *rec)
@@ -781,13 +781,10 @@ void fardroid::CheckCapabilities()
     }
 
     // Проверка доступности root
-    bool res = CheckLSOption(L"ls -la", sRes);
-    if (Opt.SU && !res) {
+    if (Opt.SU && !CheckLSOption(L"ls -la", sRes)) {
       Opt.SU0 = true;
-      res = CheckLSOption(L"ls -la", sRes);
+      Opt.SU = CheckLSOption(L"ls -la", sRes);
     }
-    if (Opt.SU && !res)
-      Opt.SU = false;
   }
 
   {
@@ -845,7 +842,7 @@ bool fardroid::GetDeviceInfo()
       else if (!StrCmpNW(sLine, L"[ro.build.version.release]", 26))
         pl->data.Copy(sLine+29, lstrlen(sLine+29)-1);
     }
-    lines.Add(pl);
+    infoLine.Add(pl);
     return true;
   }
   else
@@ -869,7 +866,7 @@ bool fardroid::GetMemoryInfo()
 
       if (RegExTokenize(sLine, hRegexpMem, &match, true)) {
         if (!cnt)
-          lines.Add(new CPanelLine{{}, GetMsg(MMemoryInfo), true});
+          infoLine.Add(new CPanelLine{{}, GetMsg(MMemoryInfo), true});
         cnt++;
         pl = new CPanelLine;
         pl->separator = false;
@@ -877,7 +874,7 @@ bool fardroid::GetMemoryInfo()
         wchar_t sMem[13];
         FSF.FormatFileSize(((match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0), 12, FFFS_FLOATSIZE|FFFS_MINSIZEINDEX, sMem, _ARRAYSIZE(sMem));
         pl->data = sMem;
-        lines.Add(pl);
+        infoLine.Add(pl);
         delete[] match;
       }
     }
@@ -898,8 +895,8 @@ void fardroid::GetPartitionsInfo()
     ADB_ls(L"/sdcard", true, true, recs);
     Opt.UseLS_L = UseLS_L;
 
-    lines.Add(new CPanelLine{{}, GetMsg(MPartitionsInfo), true});
-    lines.Add(new CPanelLine{L"Total     Used     Free", {}, false});
+    infoLine.Add(new CPanelLine{{}, GetMsg(MPartitionsInfo), true});
+    infoLine.Add(new CPanelLine{L"Total     Used     Free", {}, false});
 
     wchar_t *p = (wchar_t*)sRes.CPtr(), *sLine;
     unsigned long long save_total = 0, save_free = 0, save_used = 0;
@@ -955,7 +952,7 @@ void fardroid::GetPartitionsInfo()
         pl->data += sUsed;
         pl->data += sFree;
         pl->separator = false;
-        lines.Add(pl);
+        infoLine.Add(pl);
 
         infoSize.Add(new CInfoSize{path, total, used, free});
         if (StrStrW(path, L"emulated")) {
@@ -988,13 +985,13 @@ void fardroid::UpdateFreeSize()
 
 void fardroid::UpdateInfoLines()
 {FUNCTION
-  lines.RemoveAll();
+  infoLine.RemoveAll();
   infoSize.RemoveAll();
 
   CPanelLine *pl = new CPanelLine;
   pl->text.Format(L"%s %u.%u.%u.%u", PLUGIN_NAME, PLUGIN_MAJOR, PLUGIN_MINOR, PLUGIN_REVISION, PLUGIN_BUILD);
   pl->separator = true;
-  lines.Add(pl);
+  infoLine.Add(pl);
 
   GetMemoryInfo();
   GetPartitionsInfo();
@@ -1003,14 +1000,14 @@ void fardroid::UpdateInfoLines()
     delete[] InfoPanelLineArray;
     InfoPanelLineArray = NULL;
   }
-  if (lines.size() > 0)
+  if (infoLine.size() > 0)
   {
-    InfoPanelLineArray = new InfoPanelLine[lines.size()];
-    for (size_t i = 0; i < lines.size(); i++)
+    InfoPanelLineArray = new InfoPanelLine[infoLine.size()];
+    for (size_t i = 0; i < infoLine.size(); i++)
     {
-      InfoPanelLineArray[i].Text = lines[i]->text;
-      InfoPanelLineArray[i].Data = lines[i]->data;
-      InfoPanelLineArray[i].Flags = lines[i]->separator ? IPLFLAGS_SEPARATOR : 0;
+      InfoPanelLineArray[i].Text = infoLine[i]->text;
+      InfoPanelLineArray[i].Data = infoLine[i]->data;
+      InfoPanelLineArray[i].Flags = infoLine[i]->separator ? IPLFLAGS_SEPARATOR : 0;
     }
   }
 
@@ -1082,7 +1079,7 @@ void fardroid::PreparePanel(OpenPanelInfo *Info)
   Info->PanelTitle = panelTitle.CPtr();
   Info->CurDir = currentPath.CPtr();
   Info->InfoLines = InfoPanelLineArray;
-  Info->InfoLinesNumber = lines.size();
+  Info->InfoLinesNumber = infoLine.size();
   if (currentPath != L"/")
     Info->Flags |= OPIF_ADDDOTS;
 }

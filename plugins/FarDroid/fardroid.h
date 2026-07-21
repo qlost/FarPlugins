@@ -61,7 +61,7 @@ private:
   CCopyRecords    copy_recs;
   ProcessStruct   procStruct{};
   InfoPanelLine   *InfoPanelLineArray;
-  InfoPanelLines  lines;
+  InfoPanelLines  infoLine;
   InfoSize        infoSize;
   unsigned long long FreeSize;
 
