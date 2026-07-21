@@ -750,6 +750,8 @@ bool fardroid::CheckLSOption(const wchar_t *s_cmd, string &sRes)
 void fardroid::CheckCapabilities()
 {FUNCTION
   string sRes;
+  Opt.SU0 = false;
+  Opt.SU = Opt.UseSU;
 
   // Переключение adbd в root-режим
   if (Opt.UseSU) {
@@ -777,20 +779,19 @@ void fardroid::CheckCapabilities()
         countdown--;
       }
     }
+
+    // Проверка доступности root
+    bool res = CheckLSOption(L"ls -la", sRes);
+    if (Opt.SU && !res) {
+      Opt.SU0 = true;
+      res = CheckLSOption(L"ls -la", sRes);
+    }
+    if (Opt.SU && !res)
+      Opt.SU = false;
   }
 
-  // Проверка доступности root
-  Opt.SU0 = false;
-  Opt.SU = Opt.UseSU;
-  bool res = CheckLSOption(L"ls -la", sRes);
-  if (Opt.SU && !res) {
-    Opt.SU0 = true;
-    res = CheckLSOption(L"ls -la", sRes);
-  }
-  if (Opt.SU && !res)
-    Opt.SU = false;
-
-  if (Opt.WorkMode == WORKMODE_SAFE) {
+  {
+    Opt.UseLIS2 = false;
     Socket sock(this);
     if (sock.SendADBCommand("sync:")) {
       syncmsg msg;
@@ -798,19 +799,14 @@ void fardroid::CheckCapabilities()
       msg.req.namelen = 1;
       if (sock.SendADBPacket(&msg.req, sizeof(msg.req)) && sock.SendADBPacket((void*)"/", msg.req.namelen)) {
         DEBUGNL();
-        int ret = sock.ReadADBPacket(&msg.data, sizeof(msg.data));
-        if (ret <= 0)
-          Opt.UseLIS2 = false;
-        else if (msg.data.id != ID_DNT2) {
-          sock.ReadError(msg.data.id, msg.data.size, sRes);
-          Opt.UseLIS2 = false;
-        }
-        else
+        if (sock.ReadADBPacket(&msg.data, sizeof(msg.data)) > 0 && msg.data.id == ID_DNT2)
           Opt.UseLIS2 = true;
+        DEBUGNL();
       }
     }
   }
-  else {
+
+  {
     Opt.UseLS_L = Opt.ShowLinksAsDir && CheckLSOption(L"ls -Lla", sRes);
     Opt.UseLS_N = CheckLSOption(L"ls -Nla", sRes);
     if (!Opt.UseLS_N)
@@ -891,81 +887,94 @@ bool fardroid::GetMemoryInfo()
     return false;
 }
 
-void fardroid::ParsePartitionInfo(wchar_t *sLine)
-{
-  RegExpMatch *match;
-  wchar_t *path;
-  unsigned long long total = 0, free = 0, used = 0;
-
-  if (RegExTokenize(sLine, hRegexpPart1, &match, true) && (match[1].start >= 0) && !StrChrW(sLine + match[1].start, L'@')) {
-    path = sLine + match[1].start;
-    total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0;
-    free = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) : 0;
-    used = total - free;
-  }
-  else if (RegExTokenize(sLine, hRegexpPart2, &match, true)) {
-    if ((match[5].start >= 0) && (sLine[match[5].start] == L'/'))
-    {
-      if (!StrChrW(sLine + match[5].start, L'@')) {
-        path = sLine + match[5].start;
-        total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) * 1024ULL : 0;
-        used = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) * 1024ULL : 0;
-        free = (match[4].start >= 0) ? ParseSizeInfo(sLine + match[4].start) * 1024ULL : 0;
-      }
-      else
-        path = NULL;
-    }
-    else if ((match[1].start >= 0) && !StrChrW(sLine + match[1].start, L'@'))
-    {
-      path = sLine + match[1].start;
-      total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0;
-      used = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) : 0;
-      free = (match[4].start >= 0) ? ParseSizeInfo(sLine + match[4].start) : 0;
-    }
-    else
-      path = NULL;
-  }
-  else
-    path = NULL;
-  delete[] match;
-
-  if (path) {
-    wchar_t sTotal[12], sUsed[12], sFree[12];
-    FSF.FormatFileSize(total, 9, FFFS_FLOATSIZE|FFFS_ECONOMIC|FFFS_MINSIZEINDEX, sTotal, _ARRAYSIZE(sTotal));
-    FSF.FormatFileSize(used, 9, FFFS_FLOATSIZE|FFFS_ECONOMIC|FFFS_MINSIZEINDEX, sUsed, _ARRAYSIZE(sUsed));
-    FSF.FormatFileSize(free, 9, FFFS_FLOATSIZE|FFFS_ECONOMIC|FFFS_MINSIZEINDEX, sFree, _ARRAYSIZE(sFree));
-    CPanelLine *pl = new CPanelLine;
-    pl->text = path;
-    pl->data = sTotal;
-    pl->data += sUsed;
-    pl->data += sFree;
-    pl->separator = false;
-    lines.Add(pl);
-
-    infoSize.Add(new CInfoSize{path, total, used, free});
-    if (StrStrW(path, L"emulated")) {
-      infoSize.Add(new CInfoSize{L"/sdcard", total, used, free});
-      infoSize.Add(new CInfoSize{L"/mnt/sdcard", total, used, free});
-      //TODO добавить /storage, но проверить как это работает с физической sdcard
-    }
-  }
-}
-
 void fardroid::GetPartitionsInfo()
 {FUNCTION
   Socket sock(this);
-  string sRes, cmd = L"df";
+  string sRes, sdcardLink, cmd = L"df";
   if (sock && sock.ADBShellExecute(cmd, sRes)) {
+    CFileRecords recs;
+    bool UseLS_L = Opt.UseLS_L;
+    Opt.UseLS_L = false;
+    ADB_ls(L"/sdcard", true, true, recs);
+    Opt.UseLS_L = UseLS_L;
+
     lines.Add(new CPanelLine{{}, GetMsg(MPartitionsInfo), true});
     lines.Add(new CPanelLine{L"Total     Used     Free", {}, false});
 
     wchar_t *p = (wchar_t*)sRes.CPtr(), *sLine;
+    unsigned long long save_total = 0, save_free = 0, save_used = 0;
     while (true) {
       sLine = wcstok(p, L"\n");
       if (!sLine)
         break;
       p = NULL;
-      ParsePartitionInfo(sLine);
+
+      RegExpMatch *match;
+      wchar_t *path;
+      unsigned long long total = 0, free = 0, used = 0;
+      if (RegExTokenize(sLine, hRegexpPart1, &match, true) && (match[1].start >= 0) && !StrChrW(sLine + match[1].start, L'@')) {
+        path = sLine + match[1].start;
+        total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0;
+        free = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) : 0;
+        used = total - free;
+      }
+      else if (RegExTokenize(sLine, hRegexpPart2, &match, true)) {
+        if ((match[5].start >= 0) && (sLine[match[5].start] == L'/'))
+        {
+          if (!StrChrW(sLine + match[5].start, L'@')) {
+            path = sLine + match[5].start;
+            total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) * 1024ULL : 0;
+            used = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) * 1024ULL : 0;
+            free = (match[4].start >= 0) ? ParseSizeInfo(sLine + match[4].start) * 1024ULL : 0;
+          }
+          else
+            path = NULL;
+        }
+        else if ((match[1].start >= 0) && !StrChrW(sLine + match[1].start, L'@'))
+        {
+          path = sLine + match[1].start;
+          total = (match[2].start >= 0) ? ParseSizeInfo(sLine + match[2].start) : 0;
+          used = (match[3].start >= 0) ? ParseSizeInfo(sLine + match[3].start) : 0;
+          free = (match[4].start >= 0) ? ParseSizeInfo(sLine + match[4].start) : 0;
+        }
+        else
+          path = NULL;
+      }
+      else
+        path = NULL;
+      delete[] match;
+
+      if (path) {
+        wchar_t sTotal[12], sUsed[12], sFree[12];
+        FSF.FormatFileSize(total, 9, FFFS_FLOATSIZE|FFFS_ECONOMIC|FFFS_MINSIZEINDEX, sTotal, _ARRAYSIZE(sTotal));
+        FSF.FormatFileSize(used, 9, FFFS_FLOATSIZE|FFFS_ECONOMIC|FFFS_MINSIZEINDEX, sUsed, _ARRAYSIZE(sUsed));
+        FSF.FormatFileSize(free, 9, FFFS_FLOATSIZE|FFFS_ECONOMIC|FFFS_MINSIZEINDEX, sFree, _ARRAYSIZE(sFree));
+        CPanelLine *pl = new CPanelLine;
+        pl->text = path;
+        pl->data = sTotal;
+        pl->data += sUsed;
+        pl->data += sFree;
+        pl->separator = false;
+        lines.Add(pl);
+
+        infoSize.Add(new CInfoSize{path, total, used, free});
+        if (StrStrW(path, L"emulated")) {
+          save_total = total;
+          save_used = used;
+          save_free = free;
+        }
+        else if (!save_total && StrStrW(path, L"storage")) {
+          save_total = total;
+          save_used = used;
+          save_free = free;
+        }
+      }//if path
+    }//while
+    if (save_total) { //добавление прикопанных размеров для /sdcard
+      infoSize.Add(new CInfoSize{L"/sdcard", save_total, save_used, save_free});
+      infoSize.Add(new CInfoSize{L"/mnt/sdcard", save_total, save_used, save_free});
+      if (recs.size() == 1 && !recs[0]->linkto.IsEmpty())
+        infoSize.Add(new CInfoSize{recs[0]->linkto, save_total, save_used, save_free});
     }
   }
 }
@@ -1058,9 +1067,10 @@ HANDLE fardroid::Open(const wchar_t *cmd)
       remount = L"rw";
   }
 
-  string sRes;
-  if (remount)
+  if (remount) {
+    string sRes;
     ADB_mount(path ? path : L"/system", remount, sRes);
+  }
 
   UpdateInfoLines();
   return (HANDLE)this;

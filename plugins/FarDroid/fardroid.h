@@ -87,7 +87,6 @@ private:
   bool    CheckLSOption(const wchar_t *s_cmd, string &sRes);
   bool    GetDeviceInfo();
   bool    GetMemoryInfo();
-  void    ParsePartitionInfo(wchar_t *sLine);
   void    GetPartitionsInfo();
   void    UpdateFreeSize();
   void    UpdateInfoLines();
