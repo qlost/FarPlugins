@@ -174,7 +174,7 @@ void Socket::PrepareADBSocket(bool is_silent)
     }
   }
 
-  if (lastError == ERROR_DEV_NOT_EXIST)
+  if (lastError == ERROR_DEV_NOT_EXIST && !is_silent)
   {
     const wchar_t *msg[]{GetMsg(MTitle), GetMsg(MDeviceNotFound)};
     PsInfo.Message(&MainGuid, &MsgGuid, FMSG_WARNING | FMSG_MB_OK, NULL, msg, _ARRAYSIZE(msg), 0);
@@ -757,12 +757,14 @@ void fardroid::CheckCapabilities()
   if (Opt.UseSU) {
     Socket sock(this);
     char buf[256];
-    if (sock.SendADBCommand("root:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0 && StrStrA(buf, "restarting")) {
+    if (sock.SendADBCommand("root:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0) {
       DEBUGNL();
-      Socket sock(this);
-      sock.SendADBCommand("host:wait-for-any-disconnect");
-      sock.ReadADBPacket(buf, sizeof(buf)-1);
-      DEBUGNL();
+      if (StrStrA(buf, "restarting")) {
+        Socket sock(this);
+        sock.SendADBCommand("host:wait-for-any-disconnect");
+        sock.ReadADBPacket(buf, sizeof(buf)-1);
+        DEBUGNL();
+      }
       unsigned countdown = 12;
       while (countdown > 0) { //ожидание подключения устройства максимум 12 секунд, как в adb
         Sleep(1000);
