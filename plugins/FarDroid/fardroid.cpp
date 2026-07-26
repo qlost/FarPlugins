@@ -665,9 +665,8 @@ string fardroid::GetDeviceAliasName(const wchar_t *device)
 
 string fardroid::GetDeviceCaption(wchar_t *device)
 {
-  string caption;
   wchar_t *name = GetDeviceName(device);
-  string alias = GetDeviceAliasName(name);
+  string caption, alias = GetDeviceAliasName(name);
   if (!lstrcmp(alias.CPtr(), name))
     caption = alias;
   else
@@ -889,7 +888,9 @@ bool fardroid::GetMemoryInfo()
 void fardroid::GetPartitionsInfo()
 {FUNCTION
   Socket sock(this);
-  string sRes, sdcardLink, cmd = L"df";
+  string sRes, cmd = L"df";
+  bool SU = Opt.SU;
+  Opt.SU = false;
   if (sock && sock.ADBShellExecute(cmd, sRes)) {
     CFileRecords recs;
     bool UseLS_L = Opt.UseLS_L;
@@ -976,6 +977,7 @@ void fardroid::GetPartitionsInfo()
         infoSize.Add(new CInfoSize{recs[0]->linkto, save_total, save_used, save_free});
     }
   }
+  Opt.SU = SU;
 }
 
 void fardroid::UpdateFreeSize()
