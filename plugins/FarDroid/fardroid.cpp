@@ -752,35 +752,7 @@ void fardroid::CheckCapabilities()
   Opt.SU0 = false;
   Opt.SU = Opt.UseSU;
 
-  // Переключение adbd в root-режим
   if (Opt.UseSU) {
-    Socket sock(this);
-    char buf[256];
-    if (sock.SendADBCommand("root:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0) {
-      DEBUGNL();
-      if (StrStrA(buf, "restarting")) {
-        Socket sock(this);
-        sock.SendADBCommand("host:wait-for-any-disconnect");
-        sock.ReadADBPacket(buf, sizeof(buf)-1);
-        DEBUGNL();
-      }
-      unsigned countdown = 12;
-      while (countdown > 0) { //ожидание подключения устройства максимум 12 секунд, как в adb
-        Sleep(1000);
-        {
-          Socket sock(this, true);
-          if (sock) {
-            if (sock.SendADBCommand("host:wait-for-any-device")) {
-              sock.ReadADBPacket(buf, sizeof(buf)-1);
-              DEBUGNL();
-            }
-            break;
-          }
-        }
-        countdown--;
-      }
-    }
-
     // Проверка доступности root
     if (Opt.SU && !CheckLSOption(L"ls -la", sRes)) {
       Opt.SU0 = true;
@@ -1255,6 +1227,50 @@ void fardroid::GetFramebuffer()
   }
 }
 
+void fardroid::ADBRoot(bool enable)
+{FUNCTION
+  // Переключение root-режима adbd
+  Socket sock(this);
+  char buf[256];
+  if (sock.SendADBCommand(enable ? "root:" : "unroot:") && sock.ReadADBPacket(buf, sizeof(buf)-1) > 0) {
+    DEBUGNL();
+    if (StrStrA(buf, "restarting")) {
+      Socket sock(this);
+      sock.SendADBCommand("host:wait-for-any-disconnect");
+      sock.ReadADBPacket(buf, sizeof(buf)-1);
+      DEBUGNL();
+    }
+    wchar_t szConsoleTitle[MAX_PATH];
+    GetConsoleTitle(szConsoleTitle, MAX_PATH);
+    HANDLE hScreen = PsInfo.SaveScreen(0, 0, -1, -1);
+    procStruct.pType = PS_ROOT;
+    procStruct.is_silent = false;
+    procStruct.title = enable ? L"ADB root" : L"ADB unroot";
+    procStruct.data[PT_ALL].current = procStruct.data[PT_ALL].total = 12;
+    procStruct.nTotalStartTime = GetTickCount();
+    PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
+    while (procStruct.data[PT_ALL].current > 0) { //ожидание подключения устройства максимум 12 секунд, как в adb
+      ShowProgressMessage();
+      Sleep(1000);
+      {
+        Socket sock(this, true);
+        if (sock) {
+          if (sock.SendADBCommand("host:wait-for-any-device")) {
+            sock.ReadADBPacket(buf, sizeof(buf)-1);
+            DEBUGNL();
+          }
+          break;
+        }
+      }
+      procStruct.data[PT_ALL].current--;
+    }
+    PsInfo.RestoreScreen(hScreen);
+    PsInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
+    PsInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
+    SetConsoleTitle(szConsoleTitle);
+  }
+}
+
 intptr_t WINAPI PermissionDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void *Param2)
 {
   if (Msg == DN_BTNCLICK && (Param1 == IDPRM_All || Param1 == IDPRM_None)) {
@@ -1523,7 +1539,7 @@ void fardroid::ShowProgressMessage()
     const wchar_t *msg[]{procStruct.title, sFrom.CPtr(), buf};
     PsInfo.Message(&MainGuid, &MsgWaitGuid, FMSG_LEFTALIGN, nullptr, msg, _ARRAYSIZE(msg), 0);
   }
-  else if (procStruct.pType == PS_FB)
+  else if (procStruct.pType == PS_FB || procStruct.pType == PS_ROOT)
   {
     pt = PT_ALL;
     const unsigned PROGRESS_SIZE = 50;

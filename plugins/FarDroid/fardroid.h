@@ -111,6 +111,7 @@ public:
   bool    GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
   void    Remount(const wchar_t *Mode);
   void    GetFramebuffer();
+  void    ADBRoot(bool enable);
   bool    ChangePermissionsDialog(size_t selected);
   bool    DeleteFiles(PluginPanelItem *PanelItem, size_t ItemsNumber, OPERATION_MODES OpMode);
   int     CreateDir(const wchar_t **DestPath, OPERATION_MODES OpMode);

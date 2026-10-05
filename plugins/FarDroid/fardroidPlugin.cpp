@@ -12,8 +12,10 @@
 int ID_WorkModeBB, ID_ShowLinksAsDir, ID_CopySD, ID_CopySDWarning, ID_KillServer, ID_KillServerWarning;
 
 struct KeyBarLabel Label[] = {
-  { { VK_F7, SHIFT_PRESSED }, L"DevName", L"Device Name" },
+  { { VK_F7,  SHIFT_PRESSED }, L"DevName", L"Device Name" },
   { { VK_F10, LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"ScrShot", L"Screenshot" },
+  { { VK_F3,  SHIFT_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"Root", L"ADB root" },
+  { { VK_F4,  SHIFT_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"Unroot", L"ADB unroot" },
   { { VK_F10, SHIFT_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"Sys RW", L"Mount /system RW" },
   { { VK_F11, SHIFT_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"Sys RO", L"Mount /system RO" }
 };
@@ -314,11 +316,13 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
   {
     switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
     {
-    case VK_F10:
-      android->Remount(L"rw");
+    case VK_F3:
+    case VK_F4:
+      android->ADBRoot(Info->Rec.Event.KeyEvent.wVirtualKeyCode == VK_F3);
       return TRUE;
+    case VK_F10:
     case VK_F11:
-      android->Remount(L"ro");
+      android->Remount((Info->Rec.Event.KeyEvent.wVirtualKeyCode == VK_F10) ? L"rw" : L"ro");
       return TRUE;
     }
   }
