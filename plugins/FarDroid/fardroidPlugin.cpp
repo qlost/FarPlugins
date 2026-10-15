@@ -170,7 +170,7 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
   Builder.AddCheckbox(MConfAddToDisk, &Opt.AddToDiskMenu);
   Builder.AddTextBefore(Builder.AddEditField(Opt.Prefix, _ARRAYSIZE(Opt.Prefix), 15, L"fardroidPrefix", true), MConfPrefix);
   Builder.AddSeparator();
-  const int ModeIDs[] = {MConfSafeMode, MConfNative, MConfBusybox};
+  const int ModeIDs[] = {MConfSafeMode, MConfNative, MConfBox};
   Builder.AddRadioButtons(&Opt.WorkMode, _ARRAYSIZE(ModeIDs), ModeIDs, true);
   ID_WorkModeBB = Builder.GetLastID();
   Builder.AddCheckbox(MConfShowLinksAsDirs, &Opt.ShowLinksAsDir)->Flags |= Opt.WorkMode == WORKMODE_SAFE ? DIF_DISABLE : 0;

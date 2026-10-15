@@ -18,7 +18,7 @@
 "&Prefix:"
 "Use &Safe Mode"
 "Use &Native Mode"
-"Use &Busybox"
+"Use &Busybox/Toybox"
 "&Follow symlinks"
 "Work with S&uperuser permissions"
 "&Copy to /sdcard before operations"

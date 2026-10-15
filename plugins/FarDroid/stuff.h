@@ -57,7 +57,7 @@
 
 #define S_ISRWX  (S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX)
 
-enum { WORKMODE_SAFE, WORKMODE_NATIVE, WORKMODE_BUSYBOX };
+enum { WORKMODE_SAFE, WORKMODE_NATIVE, WORKMODE_BOX };
 const enum ProcessType { PS_SCAN, PS_COPY, PS_DELETE, PS_FB, PS_ROOT };
 const enum ProgressType { PT_ITEMS, PT_ONE, PT_ALL };
 
@@ -83,6 +83,7 @@ struct Options {
   bool    UseLS_L; //доступно разыменовывание ссылок ls -L ?
   bool    UseLS_N; //доступно отключение экранирования символов ls -N ?
   bool    UseNoColor; //доступна опция ls --color=never ?
+  const wchar_t *Box; //какой из (busybox или toybox) использовать в режиме WORKMODE_BOX
 };
 
 #pragma pack(push, 1)

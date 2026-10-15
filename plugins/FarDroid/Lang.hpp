@@ -18,7 +18,7 @@ enum {
   MConfPrefix,
   MConfSafeMode,
   MConfNative,
-  MConfBusybox,
+  MConfBox,
   MConfShowLinksAsDirs,
   MConfUseSU,
   MConfCopySD,

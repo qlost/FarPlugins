@@ -494,7 +494,7 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool is_silent, bool is_one, CFileRec
   string cmd, sRes;
   cmd.Format(
     L"%sls -la%s%s%s%s \"%s%s\"",
-    Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"",
+    Opt.Box,
     Opt.UseLS_N ? L"N" : L"",
     Opt.UseLS_L ? L"L" : L"",
     is_one ? L"d" : L"",
@@ -604,7 +604,7 @@ bool fardroid::ADB_mount(const wchar_t *sFS, const wchar_t *sMode, string &sRes)
 {FUNCTION
   Socket sock(this);
   string s;
-  s.Format(L"%smount -o %s,remount,%s %s", Opt.WorkMode == WORKMODE_BUSYBOX ? L"busybox " : L"", sMode, sMode, sFS);
+  s.Format(L"%smount -o %s,remount,%s %s", Opt.Box, sMode, sMode, sFS);
   return sock && sock.ADBShellExecute(s, sRes);
 }
 
@@ -726,32 +726,39 @@ void fardroid::DeviceNameDialog()
 bool fardroid::CheckLSOption(const wchar_t *s_cmd, string &sRes)
 {FUNCTION
   Socket sock(this);
-  bool option = false;
   string cmd;
-  cmd = (Opt.WorkMode == WORKMODE_BUSYBOX) ? L"busybox " : L"";
+  cmd = Opt.Box;
   cmd += s_cmd;
   sRes.Clear();
   if (sock && sock.ADBShellExecute(cmd, sRes)) {
     if (sRes.startsWith(L"total")) //хотя бы не ошибка?
-      option = true;
+      return true;
     else { //но встречаются случаи без total в начале
       wchar_t *sLine = wcstok((wchar_t*)sRes.CPtr(), L"\n");
       if (sLine && *sLine) {
         RegExpSearch search{sLine, 0, lstrlen(sLine), NULL, 0, nullptr};
         if (PsInfo.RegExpControl(hRegexpFile, RECTL_MATCHEX, 0, (void*)&search)) //первая строка сматчилась по файловому регэкспу?
-          option = true;
+          return true;
       }
     }
   }
-  return option;
+  return false;
 }
 
 void fardroid::CheckCapabilities()
 {FUNCTION
   string sRes;
-  Opt.SU0 = false;
-  Opt.SU = Opt.UseSU;
+  Opt.SU = Opt.SU0 = false;
 
+  if (Opt.WorkMode == WORKMODE_BOX) {
+    Opt.Box = L"toybox ";
+    if (!CheckLSOption(L"ls -la", sRes))
+      Opt.Box = L"busybox ";
+  }
+  else
+    Opt.Box = L"";
+
+  Opt.SU = Opt.UseSU;
   if (Opt.UseSU) {
     // Проверка доступности root
     if (Opt.SU && !CheckLSOption(L"ls -la", sRes)) {
@@ -788,7 +795,7 @@ void fardroid::CheckCapabilities()
 
 #ifdef USE_DEBUG
   string log;
-  log.Format(L"SU=%u  SU0=%u  UseLIS2=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u", Opt.SU, Opt.SU0, Opt.UseLIS2, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor);
+  log.Format(L"SU=%u  SU0=%u  UseLIS2=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u  Box=%s", Opt.SU, Opt.SU0, Opt.UseLIS2, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor, Opt.Box);
   DEBUGLOG(log.CPtr());
 #endif
 }
