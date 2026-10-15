@@ -434,12 +434,12 @@ bool fardroid::ReadFileList(string &sFileList, bool is_silent, CFileRecords &rec
 
       if (RegExTokenize(sLine, hRegexpFile, &match, true)) {
         CFileRecord *rec = new CFileRecord;
-        CopyMatch(rec->filename, sLine, match[17]);
+        CopyMatch(rec->filename, sLine, match[19]);
         CopyMatch(rec->owner, sLine, match[2]);
         CopyMatch(rec->grp, sLine, match[3]);
-        CopyMatch(rec->linkto, sLine, match[19]);
+        CopyMatch(rec->linkto, sLine, match[21]);
         if (isLink)
-          CopyMatch(rec->desc, sLine, match[18]);
+          CopyMatch(rec->desc, sLine, match[20]);
         else if (isDevice)
           CopyMatch(rec->desc, sLine, match[4]);
         else
@@ -450,25 +450,29 @@ bool fardroid::ReadFileList(string &sFileList, bool is_silent, CFileRecords &rec
           rec->mode = StringToMode(&sLine[match[1].start]);
 
         SYSTEMTIME st{0};
-        if (match[5].start > 0) { //2026-03-18 08:38
+        if (match[5].start > 0) { //2026-03-18 08:38:09.123456789 +0300
           st.wYear = (unsigned short)FSF.atoi(sLine + match[5].start);
           st.wMonth = (unsigned short)FSF.atoi(sLine + match[6].start);
           st.wDay = (unsigned short)FSF.atoi(sLine + match[7].start);
           st.wHour = (unsigned short)FSF.atoi(sLine + match[8].start);
           st.wMinute = (unsigned short)FSF.atoi(sLine + match[9].start);
+          if (match[10].start > 0)
+            st.wSecond = (unsigned short)FSF.atoi(sLine + match[10].start);
+          if (match[11].start > 0)
+            st.wMilliseconds = (unsigned short)FSF.atoi(sLine + match[11].start);
         }
-        else if (match[10].start > 0) { //Mar 22 2026
-          st.wYear = (unsigned short)FSF.atoi(sLine + match[12].start);
-          st.wMonth = (unsigned short)GetMonth(sLine + match[10].start);
-          st.wDay = (unsigned short)FSF.atoi(sLine + match[11].start);
+        else if (match[12].start > 0) { //Mar 22 2026
+          st.wYear = (unsigned short)FSF.atoi(sLine + match[14].start);
+          st.wMonth = (unsigned short)GetMonth(sLine + match[12].start);
+          st.wDay = (unsigned short)FSF.atoi(sLine + match[13].start);
         }
-        else if (match[13].start > 0) { //Jan 4 05:19
+        else if (match[15].start > 0) { //Jan 4 05:19
           GetLocalTime(&st);
           WORD mon = st.wMonth;
-          st.wMonth = (unsigned short)GetMonth(sLine + match[13].start);
-          st.wDay = (unsigned short)FSF.atoi(sLine + match[14].start);
-          st.wHour = (unsigned short)FSF.atoi(sLine + match[15].start);
-          st.wMinute = (unsigned short)FSF.atoi(sLine + match[16].start);
+          st.wMonth = (unsigned short)GetMonth(sLine + match[15].start);
+          st.wDay = (unsigned short)FSF.atoi(sLine + match[16].start);
+          st.wHour = (unsigned short)FSF.atoi(sLine + match[17].start);
+          st.wMinute = (unsigned short)FSF.atoi(sLine + match[18].start);
           st.wSecond = 0;
           st.wMilliseconds = 0;
           if (st.wMonth > mon)
@@ -493,8 +497,9 @@ bool fardroid::ADB_ls(const wchar_t *sDir, bool is_silent, bool is_one, CFileRec
   Socket sock(this);
   string cmd, sRes;
   cmd.Format(
-    L"%sls -la%s%s%s%s \"%s%s\"",
+    L"%sls -al%s%s%s%s%s \"%s%s\"",
     Opt.Box,
+    Opt.UseLS_l ? L"l" : L"",
     Opt.UseLS_N ? L"N" : L"",
     Opt.UseLS_L ? L"L" : L"",
     is_one ? L"d" : L"",
@@ -784,6 +789,7 @@ void fardroid::CheckCapabilities()
   }
 
   {
+    Opt.UseLS_l = CheckLSOption(L"ls -lla", sRes);
     Opt.UseLS_L = Opt.ShowLinksAsDir && CheckLSOption(L"ls -Lla", sRes);
     Opt.UseLS_N = CheckLSOption(L"ls -Nla", sRes);
     if (!Opt.UseLS_N)
@@ -795,7 +801,7 @@ void fardroid::CheckCapabilities()
 
 #ifdef USE_DEBUG
   string log;
-  log.Format(L"SU=%u  SU0=%u  UseLIS2=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u  Box=%s", Opt.SU, Opt.SU0, Opt.UseLIS2, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor, Opt.Box);
+  log.Format(L"SU=%u  SU0=%u  UseLIS2=%u  UseLS_l=%u  UseLS_L=%u  UseLS_N=%u  UseNoColor=%u  Box=%s", Opt.SU, Opt.SU0, Opt.UseLIS2, Opt.UseLS_l, Opt.UseLS_L, Opt.UseLS_N, Opt.UseNoColor, Opt.Box);
   DEBUGLOG(log.CPtr());
 #endif
 }
