@@ -615,7 +615,7 @@ bool fardroid::ADB_mkdir(const wchar_t *sDir, string &sRes)
   Socket sock(this);
   string s;
   s.Format(L"mkdir -p \"%s\"", sDir);
-  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty();
+  return sock && sock.ADBShellExecute(s, sRes) && sRes.IsEmpty() && ADB_chmod(sDir, L"0770", sRes);
 }
 
 bool fardroid::ADB_rename(const wchar_t *sSrc, const wchar_t *sDst, string &sRes)
@@ -1906,6 +1906,7 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
           sd_name = L"/sdcard/";
           sd_name += copy_recs[i]->src;
           sd_name += L".fardroid";
+          UINT64 saved_all_current = procStruct.data[PT_ALL].current;
           do {
             sRes.Clear();
             const wchar_t *spath = is_get ? procStruct.from.CPtr() : procStruct.to.CPtr();
@@ -1937,11 +1938,14 @@ int fardroid::CopyFiles(bool is_get, PluginPanelItem *PanelItem, size_t ItemsNum
                   ADB_chown(procStruct.to.CPtr(), recs[0]->owner.CPtr(), recs[0]->grp.CPtr(), sRes);
               }
             }
-            else
+            else {
+              procStruct.data[PT_ONE].current = 0;
+              procStruct.data[PT_ALL].current = saved_all_current;
               if (sRes.IsEmpty())
                 result = ABORT;
               else
                 result = CopyErrorDialog(GetMsg(MGetFile), sRes);
+            }
           } while (result == RETRY);
         }
 
