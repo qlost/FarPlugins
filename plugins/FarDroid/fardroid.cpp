@@ -444,10 +444,8 @@ bool fardroid::ReadFileList(string &sFileList, bool is_silent, CFileRecords &rec
           CopyMatch(rec->desc, sLine, match[4]);
         else
           rec->desc.Clear();
-        rec->size = isDevice || (match[4].start == -1) ? 0 : FSF.atoi64(sLine + match[4].start);
-
-        if (match[1].start >= 0)
-          rec->mode = StringToMode(&sLine[match[1].start]);
+        rec->size = (isDevice || (match[4].start == -1)) ? 0 : FSF.atoi64(sLine + match[4].start);
+        rec->mode = (match[1].start == -1) ? 0 : StringToMode(&sLine[match[1].start]);
 
         SYSTEMTIME st{0};
         if (match[5].start > 0) { //2026-03-18 08:38:09.123456789 +0300
@@ -478,11 +476,10 @@ bool fardroid::ReadFileList(string &sFileList, bool is_silent, CFileRecords &rec
           if (st.wMonth > mon)
             st.wYear--;
         }
-        if (st.wMonth) {
-          TzSpecificLocalTimeToSystemTime(NULL, &st, &st);
-          SystemTimeToFileTime(&st, &rec->ctime);
+        if (st.wMonth && TzSpecificLocalTimeToSystemTime(NULL, &st, &st) && SystemTimeToFileTime(&st, &rec->ctime))
           rec->mtime = rec->atime = rec->ctime;
-        }
+        else
+          rec->mtime = rec->atime = rec->ctime = FILETIME{0};
 
         recs.Add(rec);
         delete[] match;
